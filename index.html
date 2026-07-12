@@ -1,0 +1,2439 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>MEGA — Estoque de Motores</title>
+<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' rx='22' fill='%23D40000'/%3E%3Ctext x='50' y='70' font-family='Arial, Helvetica, sans-serif' font-weight='900' font-size='58' fill='white' text-anchor='middle'%3EM%3C/text%3E%3C/svg%3E">
+<link rel="apple-touch-icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' rx='22' fill='%23D40000'/%3E%3Ctext x='50' y='70' font-family='Arial, Helvetica, sans-serif' font-weight='900' font-size='58' fill='white' text-anchor='middle'%3EM%3C/text%3E%3C/svg%3E">
+<meta name="theme-color" content="#D40000">
+<style>
+  :root {
+    --bg:#111; --surface:#1a1a1a; --surface2:#222; --border:#2e2e2e;
+    --accent:#D40000; --accent2:#ff2222; --green:#22c55e; --red:#ef4444;
+    --yellow:#f59e0b; --blue:#3b82f6; --text:#f0f0f0; --muted:#888;
+    --radius:12px; --radius-sm:8px; --font:'Segoe UI',system-ui,sans-serif;
+  }
+  *{box-sizing:border-box;margin:0;padding:0;}
+  body{background:var(--bg);color:var(--text);font-family:var(--font);min-height:100vh;transition:background .25s,color .25s;}
+
+  /* LIGHT THEME */
+  [data-theme="light"]{
+    --bg:#f2f2f5; --surface:#ffffff; --surface2:#f1f1f4; --border:#e3e3e8;
+    --text:#161618; --muted:#68686f;
+  }
+  [data-theme="light"] .stat-card,[data-theme="light"] .table-card,[data-theme="light"] .chart-card,
+  [data-theme="light"] .filters-bar,[data-theme="light"] .modal-box{box-shadow:0 2px 10px #00000012;}
+  [data-theme="light"] tr:hover td{background:#00000004;}
+
+  .theme-switch-row{display:flex;align-items:center;justify-content:space-between;padding:9px 10px;
+    border-top:1px solid var(--border);border-bottom:1px solid var(--border);margin:10px 0 2px;}
+  .theme-switch-label{font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:1px;font-weight:700;}
+  .theme-toggle-btn{background:var(--surface2);border:1px solid var(--border);color:var(--text);
+    width:32px;height:32px;border-radius:50%;cursor:pointer;font-size:15px;display:flex;
+    align-items:center;justify-content:center;transition:all .2s;}
+  .theme-toggle-btn:hover{border-color:var(--accent);transform:scale(1.06);}
+
+  /* LOGIN */
+  #loginPage{min-height:100vh;display:flex;align-items:center;justify-content:center;
+    background:radial-gradient(ellipse at 70% 10%,#D4000022 0%,transparent 55%),
+               radial-gradient(ellipse at 10% 90%,#D4000011 0%,transparent 50%),var(--bg);}
+  .login-card{background:var(--surface);border:1px solid var(--border);border-top:3px solid var(--accent);
+    border-radius:20px;padding:44px;width:100%;max-width:420px;box-shadow:0 24px 64px #00000090;}
+  .login-logo-wrap{display:flex;flex-direction:column;align-items:center;gap:10px;margin-bottom:36px;}
+  .brand-name{font-size:12px;color:var(--muted);letter-spacing:2px;text-transform:uppercase;}
+  .form-group{margin-bottom:18px;}
+  .form-group label{display:block;font-size:11px;color:var(--muted);margin-bottom:7px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;}
+  .input-wrap{position:relative;}
+  .input-wrap input{width:100%;background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius-sm);
+    color:var(--text);padding:12px 14px;font-size:15px;outline:none;transition:border .2s;}
+  .input-wrap input:focus{border-color:var(--accent);}
+  .eye-btn{position:absolute;right:12px;top:50%;transform:translateY(-50%);background:none;border:none;
+    cursor:pointer;color:var(--muted);font-size:18px;padding:4px;transition:color .2s;}
+  .eye-btn:hover{color:var(--accent);}
+  .checkbox-row{display:flex;align-items:center;gap:8px;margin-bottom:24px;}
+  .checkbox-row input[type=checkbox]{accent-color:var(--accent);width:16px;height:16px;cursor:pointer;}
+  .checkbox-row label{font-size:13px;color:var(--muted);cursor:pointer;}
+  .btn-login{width:100%;padding:13px;border-radius:var(--radius-sm);background:var(--accent);
+    color:#fff;font-size:15px;font-weight:700;letter-spacing:.5px;border:none;cursor:pointer;transition:background .2s;}
+  .btn-login:hover{background:var(--accent2);}
+
+  /* APP */
+  #app{display:none;flex-direction:row;min-height:100vh;}
+  .sidebar{width:230px;min-height:100vh;background:#141414;border-right:1px solid var(--border);
+    padding:20px 12px;display:flex;flex-direction:column;position:fixed;top:0;left:0;bottom:0;overflow-y:auto;}
+  .sidebar-logo-wrap{padding:8px 6px 20px;border-bottom:1px solid var(--border);margin-bottom:18px;
+    display:flex;flex-direction:column;align-items:center;gap:8px;}
+  .sidebar-subtitle{font-size:10px;color:var(--muted);letter-spacing:2px;text-transform:uppercase;}
+  .nav-section{font-size:10px;color:#555;text-transform:uppercase;letter-spacing:1.5px;padding:0 8px;margin:0 0 6px;}
+  .nav-link{display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:var(--radius-sm);
+    color:var(--muted);font-size:14px;font-weight:500;cursor:pointer;transition:all .18s;
+    margin-bottom:2px;border:none;background:none;width:100%;text-align:left;}
+  .nav-link:hover{background:var(--surface2);color:var(--text);}
+  .nav-link.active{background:#D4000018;color:var(--accent);border-left:2px solid var(--accent);}
+  .nav-link .nav-icon{font-size:17px;width:22px;text-align:center;}
+  .sidebar-spacer{flex:1;}
+  .sidebar-user{display:flex;align-items:center;gap:10px;padding:12px 8px;border-top:1px solid var(--border);margin-top:12px;}
+  .user-avatar{width:34px;height:34px;border-radius:50%;background:var(--accent);
+    display:flex;align-items:center;justify-content:center;font-size:15px;flex-shrink:0;font-weight:700;color:#fff;}
+  .user-name{font-size:13px;font-weight:600;}
+  .user-role{font-size:11px;color:var(--muted);}
+  .logout-btn{margin-left:auto;background:none;border:none;color:var(--muted);cursor:pointer;font-size:16px;transition:color .2s;}
+  .logout-btn:hover{color:var(--accent);}
+
+  .main-content{margin-left:230px;flex:1;padding:28px 32px;min-height:100vh;}
+  .page-header{margin-bottom:24px;border-left:3px solid var(--accent);padding-left:14px;
+    display:flex;align-items:center;justify-content:space-between;}
+  .page-header-left h1{font-size:22px;font-weight:700;letter-spacing:-.3px;}
+  .page-header-left p{color:var(--muted);margin-top:3px;font-size:13px;}
+
+  /* BUTTONS */
+  .btn{padding:9px 18px;border-radius:var(--radius-sm);border:none;cursor:pointer;font-size:13px;font-weight:700;
+    transition:all .18s;display:inline-flex;align-items:center;gap:6px;}
+  .btn-red{background:var(--accent);color:#fff;}
+  .btn-red:hover{background:var(--accent2);}
+  .btn-green{background:#22c55e22;color:var(--green);border:1px solid #22c55e33;}
+  .btn-green:hover{background:var(--green);color:#fff;}
+  .btn-blue{background:#3b82f622;color:var(--blue);border:1px solid #3b82f633;}
+  .btn-blue:hover{background:var(--blue);color:#fff;}
+  .btn-yellow{background:#f59e0b22;color:var(--yellow);border:1px solid #f59e0b33;}
+  .btn-yellow:hover{background:var(--yellow);color:#111;}
+  .btn-ghost{background:var(--surface2);color:var(--muted);border:1px solid var(--border);}
+  .btn-ghost:hover{background:var(--border);color:var(--text);}
+  .btn-danger-sm{padding:5px 10px;border-radius:6px;background:#ef444418;color:var(--red);
+    border:1px solid #ef444430;font-size:12px;cursor:pointer;transition:all .2s;font-weight:600;}
+  .btn-danger-sm:hover{background:var(--red);color:#fff;}
+  .btn-edit-sm{padding:5px 10px;border-radius:6px;background:#3b82f618;color:var(--blue);
+    border:1px solid #3b82f630;font-size:12px;cursor:pointer;transition:all .2s;font-weight:600;}
+  .btn-edit-sm:hover{background:var(--blue);color:#fff;}
+  .btn-revert-sm{padding:5px 10px;border-radius:6px;background:#f59e0b18;color:var(--yellow);
+    border:1px solid #f59e0b30;font-size:12px;cursor:pointer;transition:all .2s;font-weight:600;}
+  .btn-revert-sm:hover{background:var(--yellow);color:#111;}
+
+  /* FILTERS */
+  .filters-bar{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);
+    padding:14px 18px;display:flex;flex-wrap:wrap;gap:12px;margin-bottom:20px;align-items:flex-end;}
+  .filter-group{display:flex;flex-direction:column;gap:5px;}
+  .filter-group label{font-size:10px;color:var(--muted);font-weight:700;text-transform:uppercase;letter-spacing:.8px;}
+  .filter-group select,.filter-group input{background:var(--surface2);border:1px solid var(--border);
+    border-radius:var(--radius-sm);color:var(--text);padding:7px 11px;font-size:13px;outline:none;min-width:100px;transition:border .2s;}
+  .filter-group select:focus,.filter-group input:focus{border-color:var(--accent);}
+
+  /* CARDS */
+  .cards-row{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:14px;margin-bottom:24px;}
+  .stat-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);
+    padding:18px;position:relative;overflow:hidden;}
+  .stat-card::before{content:'';position:absolute;top:0;left:0;right:0;height:3px;}
+  .stat-card.c-red::before{background:var(--accent);}
+  .stat-card.c-green::before{background:var(--green);}
+  .stat-card.c-dark::before{background:#444;}
+  .stat-card.c-gold::before{background:var(--yellow);}
+  .stat-card .lbl{font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.8px;margin-bottom:8px;font-weight:700;}
+  .stat-card .val{font-size:24px;font-weight:800;letter-spacing:-1px;}
+  .stat-card .sub{font-size:12px;color:var(--muted);margin-top:4px;}
+  .stat-card .ci{position:absolute;right:14px;top:50%;transform:translateY(-50%);font-size:32px;opacity:.07;}
+
+  /* TABLE */
+  .table-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);overflow:hidden;margin-bottom:20px;}
+  .table-header{display:flex;align-items:center;justify-content:space-between;padding:14px 18px;border-bottom:1px solid var(--border);}
+  .table-header h3{font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--muted);}
+  table{width:100%;border-collapse:collapse;}
+  th{text-align:left;padding:10px 16px;font-size:11px;color:var(--muted);text-transform:uppercase;
+    letter-spacing:.8px;border-bottom:1px solid var(--border);font-weight:700;}
+  td{padding:11px 16px;font-size:13px;border-bottom:1px solid #1f1f1f;}
+  tr:last-child td{border-bottom:none;}
+  tr:hover td{background:#ffffff04;}
+  .badge{display:inline-block;padding:3px 9px;border-radius:20px;font-size:11px;font-weight:700;}
+  .badge.green{background:#22c55e1a;color:var(--green);}
+  .badge.red{background:#ef44441a;color:var(--red);}
+  .badge.yellow{background:#f59e0b1a;color:var(--yellow);}
+  .badge.blue{background:#3b82f61a;color:var(--blue);}
+  .td-actions{display:flex;gap:6px;align-items:center;}
+
+  /* MODAL */
+  .modal-overlay{position:fixed;inset:0;background:#000000bb;z-index:1000;
+    display:flex;align-items:center;justify-content:center;padding:20px;}
+  .modal-box{background:var(--surface);border:1px solid var(--border);border-top:3px solid var(--accent);
+    border-radius:16px;padding:28px;width:100%;max-width:500px;
+    box-shadow:0 24px 64px #00000090;max-height:90vh;overflow-y:auto;}
+  .modal-box.wide{max-width:660px;}
+  .modal-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:22px;}
+  .modal-header h2{font-size:17px;font-weight:700;}
+  .modal-close{background:none;border:none;color:var(--muted);font-size:22px;cursor:pointer;
+    width:32px;height:32px;display:flex;align-items:center;justify-content:center;border-radius:8px;transition:all .2s;}
+  .modal-close:hover{background:var(--surface2);color:var(--text);}
+  .form-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px;}
+  .form-grid .full{grid-column:1/-1;}
+  .field{display:flex;flex-direction:column;gap:6px;}
+  .field label{font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.8px;font-weight:700;}
+  .field input,.field select{background:var(--surface2);border:1px solid var(--border);
+    border-radius:var(--radius-sm);color:var(--text);padding:10px 12px;font-size:14px;outline:none;transition:border .2s;}
+  .field input:focus,.field select:focus{border-color:var(--accent);}
+  .modal-footer{display:flex;gap:10px;justify-content:flex-end;margin-top:22px;padding-top:18px;border-top:1px solid var(--border);}
+
+  /* INFO BOX */
+  .info-box{background:var(--surface2);border-radius:var(--radius-sm);padding:12px 14px;
+    font-size:13px;border:1px solid var(--border);margin-bottom:14px;}
+  .info-box .info-row{display:flex;align-items:center;justify-content:space-between;margin-bottom:4px;}
+  .info-box .info-row:last-child{margin-bottom:0;}
+  .info-box .info-lbl{color:var(--muted);}
+  .info-box .info-val{font-weight:700;}
+
+  /* CHARTS */
+  .charts-row{display:grid;grid-template-columns:2fr 1fr;gap:18px;margin-bottom:20px;}
+  .chart-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:18px;}
+  .chart-card h3{font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--muted);margin-bottom:4px;}
+  .chart-card .sub{font-size:12px;color:#555;margin-bottom:16px;}
+  .chart-wrap{height:210px;position:relative;}
+  canvas{width:100%!important;}
+
+  /* RANK */
+  .rank-item{display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid var(--border);}
+  .rank-item:last-child{border-bottom:none;}
+  .rank-num{width:26px;height:26px;border-radius:7px;background:var(--surface2);
+    display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:800;color:var(--muted);flex-shrink:0;}
+  .rank-num.gold{background:#f59e0b18;color:var(--yellow);}
+  .rank-num.silver{background:#94a3b818;color:#94a3b8;}
+  .rank-num.bronze{background:#cd7c2e18;color:#cd7c2e;}
+  .rank-bar-wrap{flex:1;}
+  .rank-label{font-size:13px;font-weight:600;margin-bottom:4px;}
+  .rank-bar{height:5px;border-radius:3px;background:var(--surface2);overflow:hidden;}
+  .rank-bar-fill{height:100%;border-radius:3px;background:var(--accent);transition:width .7s ease;}
+  .rank-qty{font-size:13px;color:var(--muted);white-space:nowrap;}
+
+  /* TOAST */
+  #toast{position:fixed;bottom:24px;right:24px;z-index:9999;background:#1e1e1e;border:1px solid var(--border);
+    border-radius:var(--radius-sm);padding:12px 18px;font-size:13px;
+    box-shadow:0 8px 32px #000000bb;display:none;align-items:center;gap:10px;max-width:340px;}
+  #toast.show{display:flex;animation:fadeUp .25s ease;}
+  #toast.success{border-left:3px solid var(--green);}
+  #toast.error{border-left:3px solid var(--accent);}
+  #toast.warning{border-left:3px solid var(--yellow);}
+  @keyframes fadeUp{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
+
+  .empty-state{text-align:center;padding:40px;color:#444;font-size:13px;}
+  .empty-state .empty-icon{font-size:36px;margin-bottom:10px;}
+
+  /* ACERTO highlight */
+  .acerto-badge{background:#3b82f61a;color:var(--blue);border:1px dashed #3b82f640;
+    padding:2px 8px;border-radius:5px;font-size:11px;font-weight:700;}
+
+  /* ITENS ORÇAMENTO */
+  .itens-table-wrap{border:1px solid var(--border);border-radius:8px;overflow:hidden;margin-top:8px;}
+  .itens-table-wrap table{width:100%;border-collapse:collapse;}
+  .itens-table-wrap th{background:var(--surface2);font-size:10px;text-transform:uppercase;letter-spacing:.5px;
+    color:var(--muted);padding:8px 10px;text-align:left;font-weight:700;}
+  .itens-table-wrap td{padding:7px 10px;border-top:1px solid var(--border);font-size:13px;vertical-align:middle;}
+  .orc-mini-input{width:100%;background:var(--surface2);border:1px solid var(--border);color:var(--text);
+    border-radius:6px;padding:6px 8px;font-size:13px;outline:none;}
+  .orc-mini-input:focus{border-color:var(--accent);}
+  .orc-totais{display:flex;flex-direction:column;align-items:flex-end;gap:5px;margin-top:14px;font-size:13px;color:var(--muted);}
+  .orc-totais .tot-final{font-size:18px;font-weight:800;color:var(--accent);}
+  .orc-totais .tot-final span{color:var(--text)}
+  .pagamento-resumo-box{background:var(--surface2);border:1px solid var(--border);border-radius:8px;
+    padding:10px 12px;font-size:12px;color:var(--text);margin-top:8px;display:flex;align-items:center;justify-content:space-between;gap:10px;}
+
+  /* USUÁRIOS / PERMISSÕES */
+  .perm-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(190px,1fr));gap:8px;margin-top:8px;}
+  .perm-item{display:flex;align-items:center;gap:8px;background:var(--surface2);border:1px solid var(--border);
+    border-radius:8px;padding:8px 10px;font-size:12.5px;cursor:pointer;user-select:none;}
+  .perm-item input{width:15px;height:15px;accent-color:var(--accent);cursor:pointer;}
+  .perfil-badge{display:inline-block;padding:2px 9px;border-radius:20px;font-size:11px;font-weight:700;
+    background:var(--surface2);border:1px solid var(--border);color:var(--muted);}
+  .perfil-badge.admin{background:#D400001a;color:var(--accent2);border-color:#D4000040;}
+  .perfil-badge.vendas{background:#3b82f61a;color:var(--blue);border-color:#3b82f640;}
+
+  /* MOBILE / HAMBÚRGUER */
+  .mobile-topbar{display:none;}
+  .sidebar-backdrop{display:none;}
+
+  @media(max-width:860px){
+    .mobile-topbar{
+      display:flex;align-items:center;gap:10px;position:fixed;top:0;left:0;right:0;height:56px;
+      background:#141414;border-bottom:1px solid var(--border);z-index:1300;padding:0 8px 0 4px;
+    }
+    .hamburger-btn{background:none;border:none;color:#f5f5f5;font-size:26px;cursor:pointer;
+      padding:6px 10px;line-height:1;border-radius:8px;}
+    .hamburger-btn:active{background:#ffffff14;}
+    .mobile-topbar-title{color:#f5f5f5;font-weight:800;font-size:14.5px;letter-spacing:.4px;
+      overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+
+    .sidebar{position:fixed;top:0;left:0;height:100vh;width:250px;z-index:1400;
+      transform:translateX(-100%);transition:transform .25s ease;box-shadow:6px 0 24px #00000060;}
+    .sidebar.open{transform:translateX(0);}
+
+    .sidebar-backdrop{display:block;position:fixed;inset:0;background:#000000aa;z-index:1350;
+      opacity:0;pointer-events:none;transition:opacity .25s;}
+    .sidebar-backdrop.show{opacity:1;pointer-events:auto;}
+
+    .main-content{margin-left:0;padding:70px 14px 24px;}
+    .charts-row{grid-template-columns:1fr;}
+    .form-grid{grid-template-columns:1fr;}
+    .cards-row{grid-template-columns:1fr 1fr;}
+    .perm-grid{grid-template-columns:1fr 1fr;}
+    .page-header{flex-direction:column;align-items:flex-start;gap:10px;}
+    .page-header > div:last-child,.page-header button{width:100%;}
+    .table-card > div[id^="tabela-"]{overflow-x:auto;-webkit-overflow-scrolling:touch;}
+    .table-card table{min-width:640px;}
+    .modal-box{width:94vw;max-height:88vh;}
+  }
+  @media(max-width:480px){
+    .cards-row{grid-template-columns:1fr;}
+  }
+</style>
+</head>
+<body>
+
+<!-- LOGIN -->
+<div id="loginPage">
+  <div class="login-card">
+    <div class="login-logo-wrap">
+      <svg width="150" height="84" viewBox="0 0 300 170" xmlns="http://www.w3.org/2000/svg">
+        <polygon points="150,10 120,75 180,75" fill="#111"/>
+        <polygon points="150,160 120,95 180,95" fill="#111"/>
+        <polygon points="20,85 95,60 95,110" fill="#111"/>
+        <polygon points="280,85 205,60 205,110" fill="#111"/>
+        <ellipse cx="150" cy="85" rx="90" ry="38" fill="#D40000"/>
+        <line x1="150" y1="47" x2="150" y2="85" stroke="#fff" stroke-width="1.5" opacity=".35"/>
+        <line x1="150" y1="85" x2="150" y2="123" stroke="#fff" stroke-width="1.5" opacity=".35"/>
+        <rect x="90" y="66" width="120" height="38" fill="white" rx="2"/>
+        <text x="150" y="92" text-anchor="middle" font-family="Arial Black,Arial,sans-serif"
+              font-weight="900" font-size="26" fill="#111" letter-spacing="1">MEGA</text>
+      </svg>
+      <span class="brand-name">Estoque de Motores</span>
+    </div>
+    <div class="form-group"><label>Usuário</label>
+      <div class="input-wrap"><input type="text" id="loginUser" placeholder="admin" autocomplete="username"></div></div>
+    <div class="form-group"><label>Senha</label>
+      <div class="input-wrap">
+        <input type="password" id="loginPass" placeholder="••••••••" autocomplete="current-password">
+        <button class="eye-btn" id="eyeBtn" onclick="toggleEye()">👁️</button>
+      </div></div>
+    <div class="checkbox-row">
+      <input type="checkbox" id="rememberMe"><label for="rememberMe">Lembrar senha</label></div>
+    <button class="btn-login" id="loginBtn" onclick="doLogin()">ENTRAR</button>
+  </div>
+</div>
+
+<!-- APP -->
+<div id="app">
+  <div class="mobile-topbar">
+    <button class="hamburger-btn" onclick="toggleSidebar()" aria-label="Abrir menu">☰</button>
+    <span class="mobile-topbar-title">MEGA — Estoque</span>
+  </div>
+  <div class="sidebar-backdrop" id="sidebarBackdrop" onclick="fecharSidebarMobile()"></div>
+  <aside class="sidebar" id="mainSidebar">
+    <div class="sidebar-logo-wrap">
+      <svg width="110" height="62" viewBox="0 0 300 170" xmlns="http://www.w3.org/2000/svg">
+        <polygon points="150,10 120,75 180,75" fill="#1a1a1a"/>
+        <polygon points="150,160 120,95 180,95" fill="#1a1a1a"/>
+        <polygon points="20,85 95,60 95,110" fill="#1a1a1a"/>
+        <polygon points="280,85 205,60 205,110" fill="#1a1a1a"/>
+        <ellipse cx="150" cy="85" rx="90" ry="38" fill="#D40000"/>
+        <line x1="150" y1="47" x2="150" y2="85" stroke="#fff" stroke-width="1.5" opacity=".3"/>
+        <line x1="150" y1="85" x2="150" y2="123" stroke="#fff" stroke-width="1.5" opacity=".3"/>
+        <rect x="90" y="66" width="120" height="38" fill="white" rx="2"/>
+        <text x="150" y="92" text-anchor="middle" font-family="Arial Black,Arial,sans-serif"
+              font-weight="900" font-size="26" fill="#111" letter-spacing="1">MEGA</text>
+      </svg>
+      <span class="sidebar-subtitle">Estoque</span>
+    </div>
+    <div class="nav-section">Menu</div>
+    <button class="nav-link active" id="nav-dashboard" onclick="showPage('dashboard')"><span class="nav-icon">📊</span><span>Dashboard</span></button>
+    <button class="nav-link" id="nav-cadastro"  onclick="showPage('cadastro')"><span class="nav-icon">🔧</span><span>Cadastro de Motores</span></button>
+    <button class="nav-link" id="nav-compra"    onclick="showPage('compra')"><span class="nav-icon">📥</span><span>Compra</span></button>
+    <button class="nav-link" id="nav-venda"     onclick="showPage('venda')"><span class="nav-icon">📤</span><span>Venda</span></button>
+    <button class="nav-link" id="nav-estoque"   onclick="showPage('estoque')"><span class="nav-icon">📦</span><span>Estoque</span></button>
+    <button class="nav-link" id="nav-analise"   onclick="showPage('analise')"><span class="nav-icon">📈</span><span>Análise de Estoque</span></button>
+    <div class="nav-section" style="margin-top:14px">Comercial</div>
+    <button class="nav-link" id="nav-clientes"  onclick="showPage('clientes')"><span class="nav-icon">👥</span><span>Clientes</span></button>
+    <button class="nav-link" id="nav-orcamento" onclick="showPage('orcamento')"><span class="nav-icon">📄</span><span>Orçamentos</span></button>
+    <button class="nav-link" id="nav-empresa"   onclick="showPage('empresa')"><span class="nav-icon">🏢</span><span>Minha Empresa</span></button>
+    <button class="nav-link" id="nav-usuarios"  onclick="showPage('usuarios')"><span class="nav-icon">🔐</span><span>Usuários</span></button>
+    <div class="sidebar-spacer"></div>
+    <div class="theme-switch-row" id="cloudStatusRow" title="Sincronização com o banco de dados na nuvem">
+      <span class="theme-switch-label">☁️ Nuvem</span>
+      <span id="cloudStatusBadge" style="font-size:11px;font-weight:700;color:var(--muted)">verificando…</span>
+    </div>
+    <div class="theme-switch-row">
+      <span class="theme-switch-label">🌗 Tema</span>
+      <button class="theme-toggle-btn" id="themeToggleBtn" onclick="toggleTheme()" title="Alternar modo claro/escuro">🌙</button>
+    </div>
+    <div class="sidebar-user">
+      <div class="user-avatar" id="userAvLetter">A</div>
+      <div><div class="user-name" id="sidebarUser">Admin</div><div class="user-role" id="sidebarUserRole">Administrador</div></div>
+      <button class="logout-btn" onclick="doLogout()" title="Sair">🚪</button>
+    </div>
+  </aside>
+
+  <main class="main-content">
+
+    <!-- DASHBOARD -->
+    <div id="page-dashboard" class="page">
+      <div class="page-header">
+        <div class="page-header-left"><h1>Dashboard</h1><p>Visão geral do estoque de motores MEGA</p></div>
+      </div>
+      <div class="filters-bar" id="dash-filters"></div>
+      <div class="cards-row" id="dash-cards"></div>
+      <div class="charts-row">
+        <div class="chart-card">
+          <h3>Entradas × Saídas por Mês</h3>
+          <p class="sub">Quantidade de motores comprados e vendidos no ano</p>
+          <div class="chart-wrap"><canvas id="chartMensal"></canvas></div>
+        </div>
+        <div class="chart-card">
+          <h3>🏆 Ranking de Vendas por CV</h3>
+          <p class="sub">Modelos mais vendidos</p>
+          <div id="rankCV"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- CADASTRO -->
+    <div id="page-cadastro" class="page" style="display:none">
+      <div class="page-header">
+        <div class="page-header-left"><h1>Cadastro de Motores</h1><p>Gerencie os modelos disponíveis</p></div>
+        <button class="btn btn-red" onclick="abrirModalMotor()">✚ Novo Motor</button>
+      </div>
+      <div class="table-card">
+        <div class="table-header"><h3>Motores Cadastrados</h3></div>
+        <div id="tabela-motores"></div>
+      </div>
+    </div>
+
+    <!-- COMPRA -->
+    <div id="page-compra" class="page" style="display:none">
+      <div class="page-header">
+        <div class="page-header-left"><h1>Compra de Motores</h1><p>Registre entradas no estoque</p></div>
+        <button class="btn btn-red" onclick="abrirModalCompra()">✚ Nova Compra</button>
+      </div>
+      <div class="filters-bar" id="compra-filters"></div>
+      <div class="table-card">
+        <div class="table-header"><h3>Histórico de Compras</h3></div>
+        <div id="tabela-compras"></div>
+      </div>
+    </div>
+
+    <!-- VENDA -->
+    <div id="page-venda" class="page" style="display:none">
+      <div class="page-header">
+        <div class="page-header-left"><h1>Venda de Motores</h1><p>Registre saídas do estoque</p></div>
+        <div style="display:flex;gap:10px">
+          <button class="btn btn-blue" onclick="abrirModalOrcamento()">📄 Gerar Orçamento</button>
+          <button class="btn btn-red" onclick="abrirModalVenda()">✚ Nova Venda</button>
+        </div>
+      </div>
+      <div class="filters-bar" id="venda-filters"></div>
+      <div class="table-card">
+        <div class="table-header"><h3>Histórico de Vendas</h3></div>
+        <div id="tabela-vendas"></div>
+      </div>
+    </div>
+
+    <!-- ESTOQUE -->
+    <div id="page-estoque" class="page" style="display:none">
+      <div class="page-header">
+        <div class="page-header-left"><h1>Estoque Atual</h1><p>Posição atual de todos os motores</p></div>
+        <button class="btn btn-blue" onclick="abrirModalAcerto()">⚖️ Acerto de Estoque</button>
+      </div>
+      <div class="filters-bar" id="estoque-filters"></div>
+      <div class="table-card">
+        <div class="table-header"><h3>Saldo em Estoque</h3></div>
+        <div id="tabela-estoque"></div>
+      </div>
+    </div>
+
+    <!-- ANÁLISE DE ESTOQUE -->
+    <div id="page-analise" class="page" style="display:none">
+      <div class="page-header">
+        <div class="page-header-left"><h1>Análise de Estoque Geral</h1><p>Movimentação de estoque a preço de custo, mês a mês</p></div>
+        <div class="filter-group"><label>Ano</label><select id="analise-ano-select" onchange="mudarAnoAnalise()"></select></div>
+      </div>
+      <div class="cards-row" id="analise-cards"></div>
+      <div class="table-card">
+        <div class="table-header"><h3>Saldo Anterior + Entradas − Saídas = Saldo Final (a preço de custo)</h3></div>
+        <div id="tabela-analise"></div>
+      </div>
+    </div>
+
+    <!-- CLIENTES -->
+    <div id="page-clientes" class="page" style="display:none">
+      <div class="page-header">
+        <div class="page-header-left"><h1>Clientes</h1><p>Cadastro de clientes para vendas e orçamentos</p></div>
+        <button class="btn btn-red" onclick="abrirModalCliente()">✚ Novo Cliente</button>
+      </div>
+      <div class="table-card">
+        <div class="table-header"><h3>Clientes Cadastrados</h3></div>
+        <div id="tabela-clientes"></div>
+      </div>
+    </div>
+
+    <!-- ORÇAMENTOS -->
+    <div id="page-orcamento" class="page" style="display:none">
+      <div class="page-header">
+        <div class="page-header-left"><h1>Orçamentos</h1><p>Crie propostas comerciais e gere o PDF para enviar ao cliente</p></div>
+        <button class="btn btn-red" onclick="abrirModalOrcamento()">✚ Novo Orçamento</button>
+      </div>
+      <div class="table-card">
+        <div class="table-header"><h3>Orçamentos Emitidos</h3></div>
+        <div id="tabela-orcamentos"></div>
+      </div>
+    </div>
+
+    <!-- EMPRESA -->
+    <div id="page-empresa" class="page" style="display:none">
+      <div class="page-header">
+        <div class="page-header-left"><h1>Minha Empresa</h1><p>Estes dados aparecem no cabeçalho dos orçamentos em PDF</p></div>
+      </div>
+      <div class="table-card" style="padding:24px">
+        <div class="form-grid">
+          <div class="field"><label>Nome / Razão Social</label><input type="text" id="emp-nome" placeholder="MEGA"></div>
+          <div class="field"><label>CNPJ</label><input type="text" id="emp-cnpj" placeholder="00.000.000/0000-00"></div>
+          <div class="field"><label>Inscrição Estadual</label><input type="text" id="emp-ie" placeholder="opcional"></div>
+          <div class="field"><label>Telefone</label><input type="text" id="emp-telefone" placeholder="(00) 00000-0000"></div>
+          <div class="field full"><label>Endereço</label><input type="text" id="emp-endereco" placeholder="Rua, número, bairro"></div>
+          <div class="field"><label>Cidade</label><input type="text" id="emp-cidade"></div>
+          <div class="field"><label>UF</label><input type="text" id="emp-uf" maxlength="2" style="text-transform:uppercase"></div>
+          <div class="field"><label>CEP</label><input type="text" id="emp-cep"></div>
+          <div class="field"><label>E-mail</label><input type="email" id="emp-email"></div>
+          <div class="field"><label>Site (opcional)</label><input type="text" id="emp-site"></div>
+        </div>
+        <div class="modal-footer" style="border-top:1px solid var(--border);margin-top:22px;padding-top:18px;justify-content:flex-end">
+          <button class="btn btn-red" onclick="salvarEmpresa()">💾 Salvar Dados da Empresa</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- USUÁRIOS -->
+    <div id="page-usuarios" class="page" style="display:none">
+      <div class="page-header">
+        <div class="page-header-left"><h1>Usuários</h1><p>Cadastro de usuários e permissões de acesso por tela</p></div>
+        <button class="btn btn-red" onclick="abrirModalUsuario()">✚ Novo Usuário</button>
+      </div>
+      <div class="table-card">
+        <div class="table-header"><h3>Usuários Cadastrados</h3></div>
+        <div id="tabela-usuarios"></div>
+      </div>
+    </div>
+
+  </main>
+</div>
+
+<!-- ══ MODAIS ══ -->
+
+<!-- Modal Motor -->
+<div id="modal-motor" class="modal-overlay" style="display:none" onclick="fecharModalSe(event,'modal-motor')">
+  <div class="modal-box">
+    <div class="modal-header">
+      <h2 id="modal-motor-title">Novo Motor</h2>
+      <button class="modal-close" onclick="fecharModal('modal-motor')">✕</button>
+    </div>
+    <div class="form-grid">
+      <input type="hidden" id="m-id">
+      <div class="field"><label>Marca</label><input type="text" id="m-marca" placeholder="ex: WEG"></div>
+      <div class="field"><label>CV (Cavalos)</label><input type="number" id="m-cv" placeholder="ex: 5" step="0.25" min="0"></div>
+      <div class="field"><label>Voltagem</label>
+        <select id="m-volt">
+          <option value="">Selecione</option>
+          <option>110V</option><option>127V</option><option>220V</option>
+          <option>380V</option><option>220/380V</option><option>440V</option>
+        </select>
+      </div>
+      <div class="field"><label>Modelo / Código</label><input type="text" id="m-modelo" placeholder="ex: W21 IE3"></div>
+      <div class="field full"><label>Descrição (opcional)</label><input type="text" id="m-desc" placeholder="Observações"></div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="fecharModal('modal-motor')">Cancelar</button>
+      <button class="btn btn-red" onclick="salvarMotor()">💾 Salvar Motor</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal Compra -->
+<div id="modal-compra" class="modal-overlay" style="display:none" onclick="fecharModalSe(event,'modal-compra')">
+  <div class="modal-box">
+    <div class="modal-header">
+      <h2 id="modal-compra-title">Nova Compra</h2>
+      <button class="modal-close" onclick="fecharModal('modal-compra')">✕</button>
+    </div>
+    <div class="form-grid">
+      <input type="hidden" id="c-id">
+      <div class="field full"><label>Motor</label><select id="c-motor"></select></div>
+      <div class="field"><label>Quantidade</label><input type="number" id="c-qty" placeholder="1" min="1"></div>
+      <div class="field"><label>Valor de Compra (R$)</label><input type="number" id="c-valor" placeholder="0,00" step="0.01" min="0"></div>
+      <div class="field"><label>Data</label><input type="date" id="c-data"></div>
+      <div class="field"><label>Fornecedor (opcional)</label><input type="text" id="c-forn" placeholder="Nome do fornecedor"></div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="fecharModal('modal-compra')">Cancelar</button>
+      <button class="btn btn-red" onclick="salvarCompra()">💾 Salvar Compra</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal Venda -->
+<div id="modal-venda" class="modal-overlay" style="display:none" onclick="fecharModalSe(event,'modal-venda')">
+  <div class="modal-box">
+    <div class="modal-header">
+      <h2 id="modal-venda-title">Nova Venda</h2>
+      <button class="modal-close" onclick="fecharModal('modal-venda')">✕</button>
+    </div>
+    <div class="form-grid">
+      <input type="hidden" id="v-id">
+      <div class="field full"><label>Motor</label>
+        <select id="v-motor" onchange="atualizarInfoVenda()"></select></div>
+      <div id="venda-info-box" class="info-box full" style="display:none">
+        <div class="info-row"><span class="info-lbl">Preço médio de compra</span><span class="info-val" id="v-pm-label" style="color:var(--accent)">—</span></div>
+        <div class="info-row"><span class="info-lbl">Estoque disponível</span><span class="info-val" id="v-est-label" style="color:var(--green)">—</span></div>
+      </div>
+      <div class="field"><label>Quantidade</label><input type="number" id="v-qty" placeholder="1" min="1" oninput="calcVendaResumo()"></div>
+      <div class="field"><label>Valor de Venda (R$)</label><input type="number" id="v-valor" placeholder="0,00" step="0.01" oninput="calcVendaResumo()"></div>
+      <div class="field"><label>Data</label><input type="date" id="v-data"></div>
+      <div class="field"><label>Cliente (opcional)</label><input type="text" id="v-cliente" placeholder="Nome do cliente"></div>
+      <div id="v-resumo" class="full" style="display:none;padding:10px;border-radius:8px;font-size:13px;margin-top:-4px"></div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="fecharModal('modal-venda')">Cancelar</button>
+      <button class="btn btn-red" onclick="salvarVenda()">💾 Salvar Venda</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal Acerto de Estoque -->
+<div id="modal-acerto" class="modal-overlay" style="display:none" onclick="fecharModalSe(event,'modal-acerto')">
+  <div class="modal-box">
+    <div class="modal-header">
+      <h2>⚖️ Acerto de Estoque</h2>
+      <button class="modal-close" onclick="fecharModal('modal-acerto')">✕</button>
+    </div>
+    <p style="font-size:13px;color:var(--muted);margin-bottom:18px">Ajuste a quantidade real em estoque. Um lançamento de acerto será criado automaticamente na compra ou venda para equilibrar o saldo.</p>
+    <div class="form-grid">
+      <div class="field full"><label>Motor</label><select id="a-motor" onchange="atualizarInfoAcerto()"></select></div>
+      <div id="acerto-info-box" class="info-box full" style="display:none">
+        <div class="info-row"><span class="info-lbl">Saldo atual no sistema</span><span class="info-val" id="a-saldo-label">—</span></div>
+        <div class="info-row"><span class="info-lbl">Preço médio de compra</span><span class="info-val" id="a-pm-label" style="color:var(--accent)">—</span></div>
+      </div>
+      <div class="field full"><label>Quantidade Real (contagem física)</label>
+        <input type="number" id="a-qty" placeholder="0" min="0" oninput="calcAcerto()"></div>
+      <div id="a-resultado" class="full" style="display:none;padding:12px;border-radius:8px;font-size:13px;border:1px solid var(--border)"></div>
+      <div class="field"><label>Data do Acerto</label><input type="date" id="a-data"></div>
+      <div class="field"><label>Motivo (opcional)</label><input type="text" id="a-motivo" placeholder="ex: Inventário mensal"></div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="fecharModal('modal-acerto')">Cancelar</button>
+      <button class="btn btn-blue" onclick="salvarAcerto()">⚖️ Confirmar Acerto</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal Cliente -->
+<div id="modal-cliente" class="modal-overlay" style="display:none" onclick="fecharModalSe(event,'modal-cliente')">
+  <div class="modal-box wide">
+    <div class="modal-header">
+      <h2 id="modal-cliente-title">Novo Cliente</h2>
+      <button class="modal-close" onclick="fecharModal('modal-cliente')">✕</button>
+    </div>
+    <div class="form-grid">
+      <input type="hidden" id="cl-id">
+      <div class="field full"><label>Nome / Razão Social</label><input type="text" id="cl-nome" placeholder="ex: Indústria Silva Ltda"></div>
+      <div class="field"><label>CNPJ / CPF</label><input type="text" id="cl-cnpj" placeholder="00.000.000/0000-00"></div>
+      <div class="field"><label>Inscrição Estadual</label><input type="text" id="cl-ie" placeholder="opcional"></div>
+      <div class="field full"><label>Endereço</label><input type="text" id="cl-endereco" placeholder="Rua, número, bairro"></div>
+      <div class="field"><label>Cidade</label><input type="text" id="cl-cidade"></div>
+      <div class="field"><label>UF</label><input type="text" id="cl-uf" maxlength="2" style="text-transform:uppercase"></div>
+      <div class="field"><label>CEP</label><input type="text" id="cl-cep"></div>
+      <div class="field"><label>Telefone</label><input type="text" id="cl-telefone" placeholder="(00) 00000-0000"></div>
+      <div class="field"><label>E-mail</label><input type="email" id="cl-email"></div>
+      <div class="field"><label>Pessoa de Contato</label><input type="text" id="cl-contato" placeholder="opcional"></div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="fecharModal('modal-cliente')">Cancelar</button>
+      <button class="btn btn-red" onclick="salvarCliente()">💾 Salvar Cliente</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal Orçamento -->
+<div id="modal-orcamento" class="modal-overlay" style="display:none" onclick="fecharModalSe(event,'modal-orcamento')">
+  <div class="modal-box wide">
+    <div class="modal-header">
+      <h2 id="modal-orcamento-title">Novo Orçamento</h2>
+      <button class="modal-close" onclick="fecharModal('modal-orcamento')">✕</button>
+    </div>
+    <input type="hidden" id="orc-id">
+    <div class="form-grid">
+      <div class="field full"><label>Cliente</label>
+        <select id="orc-cliente"></select></div>
+      <div class="field"><label>Data</label><input type="date" id="orc-data"></div>
+      <div class="field"><label>Validade (dias)</label><input type="number" id="orc-validade" min="1" value="15"></div>
+      <div class="field"><label>Status</label>
+        <select id="orc-status" onchange="atualizarAvisoStatusModal()">
+          <option value="enviado">📨 Enviado ao Cliente</option>
+          <option value="aprovado">✅ Aprovado</option>
+          <option value="reprovado">❌ Reprovado</option>
+        </select>
+      </div>
+      <div class="field"><label>Condições de Pagamento</label><input type="text" id="orc-cond" placeholder="ex: 30 dias, à vista"></div>
+      <div class="field"><label>Prazo de Entrega</label><input type="text" id="orc-prazo" placeholder="ex: 5 dias úteis"></div>
+    </div>
+    <p id="orc-status-aviso" style="display:none;font-size:12px;color:var(--yellow);background:#f59e0b12;border:1px solid #f59e0b30;padding:8px 12px;border-radius:8px;margin-top:-6px;margin-bottom:14px">
+      ⚠️ Ao salvar como <strong>Aprovado</strong>, uma venda será gerada automaticamente para cada item, reduzindo o saldo em estoque.
+    </p>
+
+    <div style="margin-top:18px;display:flex;align-items:center;justify-content:space-between">
+      <label style="font-size:11px;color:var(--muted);font-weight:700;text-transform:uppercase;letter-spacing:.8px">Itens do Orçamento</label>
+      <button class="btn btn-blue" style="padding:6px 12px;font-size:12px" onclick="adicionarItemOrc()">✚ Adicionar Item</button>
+    </div>
+    <div class="itens-table-wrap">
+      <table><thead><tr><th>Motor</th><th style="width:70px">Qtd</th><th style="width:110px">Valor Unit.</th><th style="width:110px">Subtotal</th><th></th></tr></thead>
+      <tbody id="orc-itens-tbody"></tbody></table>
+    </div>
+
+    <div class="form-grid" style="margin-top:14px">
+      <div class="field"><label>Desconto (R$)</label><input type="number" id="orc-desconto" min="0" step="0.01" value="0" oninput="renderOrcItensTable()"></div>
+      <div class="field full"><label>Observações</label><input type="text" id="orc-obs" placeholder="opcional"></div>
+    </div>
+
+    <div style="margin-top:14px">
+      <div style="display:flex;align-items:center;justify-content:space-between">
+        <label style="font-size:11px;color:var(--muted);font-weight:700;text-transform:uppercase;letter-spacing:.8px">Forma de Pagamento</label>
+        <button class="btn btn-blue" style="padding:6px 12px;font-size:12px" onclick="abrirModalPagamento()">💳 Configurar Pagamento</button>
+      </div>
+      <div class="pagamento-resumo-box"><span id="orc-pagamento-resumo">💳 À vista (padrão, sem parcelamento)</span></div>
+    </div>
+
+    <div class="orc-totais">
+      <div>Subtotal: <strong id="orc-subtotal" style="color:var(--text)">R$ 0,00</strong></div>
+      <div class="tot-final">Total: <span id="orc-total">R$ 0,00</span></div>
+    </div>
+
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="fecharModal('modal-orcamento')">Cancelar</button>
+      <button class="btn btn-red" onclick="salvarOrcamento()">💾 Salvar Orçamento</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal Forma de Pagamento -->
+<div id="modal-pagamento" class="modal-overlay" style="display:none;z-index:1100" onclick="fecharModalSe(event,'modal-pagamento')">
+  <div class="modal-box wide">
+    <div class="modal-header">
+      <h2>💳 Forma de Pagamento</h2>
+      <button class="modal-close" onclick="fecharModal('modal-pagamento')">✕</button>
+    </div>
+    <div class="form-grid">
+      <div class="field"><label>Tipo de Pagamento</label>
+        <select id="pg-tipo" onchange="mudarTipoPagamento()">
+          <option value="vista">À Vista</option>
+          <option value="parcelado">Parcelado</option>
+        </select>
+      </div>
+      <div class="field"><label>Total do Orçamento</label>
+        <div class="info-box" style="margin:0;padding:10px 12px"><strong id="pg-total-orc" style="color:var(--accent)">R$ 0,00</strong></div>
+      </div>
+      <div class="field" id="pg-num-parcelas-wrap" style="display:none">
+        <label>Número de Parcelas</label>
+        <input type="number" id="pg-num-parcelas" min="1" value="2">
+      </div>
+      <div class="field" id="pg-data-primeira-wrap" style="display:none">
+        <label>Data da 1ª Parcela</label>
+        <input type="date" id="pg-data-primeira">
+      </div>
+      <div class="field" id="pg-intervalo-wrap" style="display:none">
+        <label>Intervalo entre Parcelas (dias)</label>
+        <input type="number" id="pg-intervalo" min="1" value="30">
+      </div>
+    </div>
+
+    <div id="pg-parcelado-area" style="display:none">
+      <div style="margin-top:16px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px">
+        <label style="font-size:11px;color:var(--muted);font-weight:700;text-transform:uppercase;letter-spacing:.8px">Parcelas</label>
+        <div style="display:flex;gap:8px">
+          <button class="btn btn-ghost" style="padding:6px 12px;font-size:12px" onclick="gerarParcelasAuto()">🔄 Gerar Automático</button>
+          <button class="btn btn-blue" style="padding:6px 12px;font-size:12px" onclick="adicionarParcelaManual()">✚ Parcela Manual</button>
+        </div>
+      </div>
+      <p style="font-size:12px;color:var(--muted);margin-top:6px">O valor e a data de cada parcela podem ser editados manualmente após gerar automaticamente.</p>
+      <div class="itens-table-wrap">
+        <table><thead><tr><th style="width:60px">Parcela</th><th>Valor (R$)</th><th>Vencimento</th><th></th></tr></thead>
+        <tbody id="pg-parcelas-tbody"></tbody></table>
+      </div>
+      <div class="orc-totais" style="margin-top:10px">
+        <div>Total das Parcelas: <strong id="pg-total-parcelas" style="color:var(--text)">R$ 0,00</strong></div>
+        <div id="pg-diferenca-aviso" style="color:var(--accent);font-size:12px;display:none">⚠️ A soma das parcelas está diferente do total do orçamento</div>
+      </div>
+    </div>
+
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="fecharModal('modal-pagamento')">Cancelar</button>
+      <button class="btn btn-red" onclick="salvarPagamento()">💾 Salvar Forma de Pagamento</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal Usuário -->
+<div id="modal-usuario" class="modal-overlay" style="display:none" onclick="fecharModalSe(event,'modal-usuario')">
+  <div class="modal-box wide">
+    <div class="modal-header">
+      <h2 id="modal-usuario-title">Novo Usuário</h2>
+      <button class="modal-close" onclick="fecharModal('modal-usuario')">✕</button>
+    </div>
+    <input type="hidden" id="usr-id">
+    <div class="form-grid">
+      <div class="field"><label>Usuário (login)</label><input type="text" id="usr-usuario" placeholder="ex: joao"></div>
+      <div class="field"><label>Perfil</label><input type="text" id="usr-perfil" placeholder="ex: Administrador, Vendas, Financeiro..."></div>
+      <div class="field full"><label>Senha</label>
+        <div style="position:relative">
+          <input type="password" id="usr-senha" placeholder="Digite a senha">
+          <button type="button" class="eye-btn" onclick="toggleEyeUsuario()" id="eyeBtnUsuario" style="position:absolute;right:10px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;font-size:15px">👁️</button>
+        </div>
+      </div>
+    </div>
+
+    <div style="margin-top:10px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px">
+      <label style="font-size:11px;color:var(--muted);font-weight:700;text-transform:uppercase;letter-spacing:.8px">Permissões de Tela</label>
+      <div style="display:flex;gap:8px;flex-wrap:wrap">
+        <button class="btn btn-ghost" style="padding:6px 12px;font-size:12px" onclick="aplicarModeloPermissao('admin')">🛡️ Modelo Admin</button>
+        <button class="btn btn-blue" style="padding:6px 12px;font-size:12px" onclick="aplicarModeloPermissao('vendas')">💼 Modelo Vendas</button>
+      </div>
+    </div>
+    <div class="perm-grid" id="usr-perm-grid"></div>
+
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="fecharModal('modal-usuario')">Cancelar</button>
+      <button class="btn btn-red" onclick="salvarUsuario()">💾 Salvar Usuário</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal Confirmação Reverter -->
+<div id="modal-confirm" class="modal-overlay" style="display:none" onclick="fecharModalSe(event,'modal-confirm')">
+  <div class="modal-box" style="max-width:380px">
+    <div class="modal-header">
+      <h2 id="confirm-title">Confirmar Ação</h2>
+      <button class="modal-close" onclick="fecharModal('modal-confirm')">✕</button>
+    </div>
+    <p id="confirm-msg" style="font-size:14px;color:var(--muted);margin-bottom:20px"></p>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="fecharModal('modal-confirm')">Cancelar</button>
+      <button class="btn btn-red" id="confirm-ok-btn">Confirmar</button>
+    </div>
+  </div>
+</div>
+
+<div id="toast"></div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script>
+// ══════════════════════════════════════════════════════════
+//  SUPABASE (sincronização em nuvem)
+// ══════════════════════════════════════════════════════════
+const SUPABASE_URL='https://pbgkkzhanmtqoxmaigip.supabase.co';
+const SUPABASE_ANON_KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBiZ2tremhhbm10cW94bWFpZ2lwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODM4MjM2MTAsImV4cCI6MjA5OTM5OTYxMH0.pJwapAruiU4s6iV4nbS3xApbbf_vGuIql8wQ6huQatQ';
+let supa=null;
+let cloudOnline=false;
+try{
+  if(window.supabase&&window.supabase.createClient){
+    supa=window.supabase.createClient(SUPABASE_URL,SUPABASE_ANON_KEY);
+  }
+}catch(e){ console.warn('Supabase indisponível, operando apenas localmente.',e); }
+
+function atualizarStatusNuvem(status){
+  // status: 'ok' | 'off' | 'checking'
+  const el=document.getElementById('cloudStatusBadge');
+  if(!el) return;
+  if(status==='ok'){ el.textContent='conectado'; el.style.color='var(--green)'; cloudOnline=true; }
+  else if(status==='off'){ el.textContent='offline (local)'; el.style.color='var(--muted)'; cloudOnline=false; }
+  else { el.textContent='verificando…'; el.style.color='var(--muted)'; }
+}
+
+// Envia uma chave (array/objeto) para a nuvem — não bloqueia a interface (fire-and-forget)
+async function syncToSupabase(key,value){
+  if(!supa) return;
+  try{
+    const { error }=await supa.from('app_data').upsert({key,value,updated_at:new Date().toISOString()},{onConflict:'key'});
+    if(error) throw error;
+    atualizarStatusNuvem('ok');
+  }catch(e){
+    console.warn('Falha ao sincronizar "'+key+'" com a nuvem:',e);
+    atualizarStatusNuvem('off');
+  }
+}
+
+// Baixa todos os dados salvos na nuvem e grava no localStorage (usado no carregamento do app)
+async function carregarDoSupabase(){
+  if(!supa){ atualizarStatusNuvem('off'); return false; }
+  atualizarStatusNuvem('checking');
+  try{
+    const { data,error }=await supa.from('app_data').select('key,value');
+    if(error) throw error;
+    if(data&&data.length){
+      data.forEach(row=>{ localStorage.setItem('ms_'+row.key,JSON.stringify(row.value)); });
+      localStorage.setItem('ms_initialized','1');
+    }
+    atualizarStatusNuvem('ok');
+    return true;
+  }catch(e){
+    console.warn('Não foi possível carregar dados da nuvem — usando dados locais.',e);
+    atualizarStatusNuvem('off');
+    return false;
+  }
+}
+
+// ══════════════════════════════════════════════════════════
+//  DATA
+// ══════════════════════════════════════════════════════════
+// Chaves que NUNCA devem subir para a nuvem (dados sensíveis de sessão local)
+const NO_SYNC_KEYS=new Set(['session','savedLogin']);
+const DB={
+  get:k=>{try{return JSON.parse(localStorage.getItem('ms_'+k))||[];}catch{return[];}},
+  set:(k,v)=>{localStorage.setItem('ms_'+k,JSON.stringify(v));if(!NO_SYNC_KEYS.has(k))syncToSupabase(k,v);},
+  getObj:(k,d={})=>{try{return JSON.parse(localStorage.getItem('ms_'+k))||d;}catch{return d;}},
+  setObj:(k,v)=>{localStorage.setItem('ms_'+k,JSON.stringify(v));if(!NO_SYNC_KEYS.has(k))syncToSupabase(k,v);},
+};
+
+// ── Inicializa sem dados (limpo) ──
+function initClean(){
+  if(localStorage.getItem('ms_initialized')) return;
+  DB.set('motores',[]);  DB.setObj('motorNextId',1);
+  DB.set('compras',[]);  DB.setObj('compraNextId',1);
+  DB.set('vendas',[]);   DB.setObj('vendaNextId',1);
+  DB.set('clientes',[]); DB.setObj('clienteNextId',1);
+  DB.set('orcamentos',[]); DB.setObj('orcamentoNextId',1);
+  DB.setObj('empresa',{nome:'MEGA',cnpj:'',ie:'',endereco:'',cidade:'',uf:'',cep:'',telefone:'',email:'',site:''});
+  localStorage.setItem('ms_initialized','1');
+}
+
+// ══════════════════════════════════════════════════════════
+//  PÁGINAS / PERMISSÕES
+// ══════════════════════════════════════════════════════════
+const PAGINAS_APP=[
+  {key:'dashboard',  label:'📊 Dashboard'},
+  {key:'cadastro',   label:'🔧 Cadastro de Motores'},
+  {key:'compra',     label:'📥 Compra'},
+  {key:'venda',      label:'📤 Venda'},
+  {key:'estoque',    label:'📦 Estoque'},
+  {key:'analise',    label:'📈 Análise de Estoque'},
+  {key:'clientes',   label:'👥 Clientes'},
+  {key:'orcamento',  label:'📄 Orçamentos'},
+  {key:'empresa',    label:'🏢 Minha Empresa'},
+  {key:'usuarios',   label:'🔐 Usuários'},
+];
+const PERMISSOES_ADMIN=PAGINAS_APP.map(p=>p.key);
+const PERMISSOES_VENDAS=['dashboard','venda','estoque','clientes','orcamento'];
+
+let usuarioLogado=null;
+
+function seedUsuariosPadrao(){
+  const usuarios=DB.get('usuarios');
+  if(usuarios&&usuarios.length) return; // já existem usuários (locais ou vindos da nuvem) — não sobrescreve
+  const padrao=[
+    {id:1,usuario:'admin', senha:'C@pmeg_2026',perfil:'Administrador',permissoes:PERMISSOES_ADMIN},
+    {id:2,usuario:'vendas',senha:'C@pven_2026', perfil:'Vendas',       permissoes:PERMISSOES_VENDAS},
+  ];
+  DB.set('usuarios',padrao);
+  DB.setObj('usuarioNextId',3);
+}
+
+function usuarioPodeAcessar(pagina){
+  if(!usuarioLogado) return false;
+  if(!usuarioLogado.permissoes||!usuarioLogado.permissoes.length) return true; // fallback de segurança contra dado corrompido
+  return usuarioLogado.permissoes.includes(pagina);
+}
+
+function aplicarPermissoesNav(){
+  PAGINAS_APP.forEach(p=>{
+    const btn=document.getElementById('nav-'+p.key);
+    if(btn) btn.style.display=usuarioPodeAcessar(p.key)?'':'none';
+  });
+}
+
+// ══════════════════════════════════════════════════════════
+//  AUTH
+// ══════════════════════════════════════════════════════════
+window.onload=async()=>{
+  const savedTheme=localStorage.getItem('ms_theme')||'dark';
+  document.documentElement.setAttribute('data-theme',savedTheme);
+  document.getElementById('themeToggleBtn').textContent=savedTheme==='light'?'☀️':'🌙';
+
+  const loginBtn=document.getElementById('loginBtn');
+  if(loginBtn){loginBtn.disabled=true;loginBtn.textContent='CARREGANDO...';}
+  await carregarDoSupabase();
+  initClean();
+  seedUsuariosPadrao();
+  if(loginBtn){loginBtn.disabled=false;loginBtn.textContent='ENTRAR';}
+
+  const saved=DB.getObj('savedLogin',null);
+  if(saved){document.getElementById('loginUser').value=saved.user;document.getElementById('loginPass').value=saved.pass;document.getElementById('rememberMe').checked=true;}
+  if(DB.getObj('session',null)) openApp(DB.getObj('session').user);
+};
+function toggleTheme(){
+  const atual=document.documentElement.getAttribute('data-theme')==='light'?'light':'dark';
+  const novo=atual==='light'?'dark':'light';
+  document.documentElement.setAttribute('data-theme',novo);
+  localStorage.setItem('ms_theme',novo);
+  document.getElementById('themeToggleBtn').textContent=novo==='light'?'☀️':'🌙';
+  if(document.getElementById('app').style.display==='flex') renderPage(currentPage);
+}
+function toggleEye(){const p=document.getElementById('loginPass'),b=document.getElementById('eyeBtn');p.type=p.type==='password'?'text':'password';b.textContent=p.type==='text'?'🙈':'👁️';}
+function doLogin(){
+  const u=document.getElementById('loginUser').value.trim(),p=document.getElementById('loginPass').value;
+  const encontrado=DB.get('usuarios').find(us=>us.usuario===u&&us.senha===p);
+  if(encontrado){
+    if(document.getElementById('rememberMe').checked) DB.setObj('savedLogin',{user:u,pass:p}); else localStorage.removeItem('ms_savedLogin');
+    DB.setObj('session',{user:u}); openApp(u);
+  } else showToast('Usuário ou senha inválidos','error');
+}
+function doLogout(){
+  localStorage.removeItem('ms_session');
+  usuarioLogado=null;
+  document.getElementById('app').style.display='none';
+  document.getElementById('loginPage').style.display='flex';
+}
+function openApp(user){
+  usuarioLogado=DB.get('usuarios').find(us=>us.usuario===user)||null;
+  document.getElementById('loginPage').style.display='none';
+  document.getElementById('app').style.display='flex';
+  const n=user.charAt(0).toUpperCase()+user.slice(1);
+  document.getElementById('sidebarUser').textContent=n;
+  document.getElementById('userAvLetter').textContent=n.charAt(0);
+  document.getElementById('sidebarUserRole').textContent=usuarioLogado?usuarioLogado.perfil:'—';
+  aplicarPermissoesNav();
+  const primeira=PAGINAS_APP.find(p=>usuarioPodeAcessar(p.key));
+  showPage(primeira?primeira.key:'dashboard');
+}
+
+// ══════════════════════════════════════════════════════════
+//  NAV / MOBILE
+// ══════════════════════════════════════════════════════════
+function toggleSidebar(){
+  document.getElementById('mainSidebar').classList.toggle('open');
+  document.getElementById('sidebarBackdrop').classList.toggle('show');
+}
+function fecharSidebarMobile(){
+  document.getElementById('mainSidebar').classList.remove('open');
+  document.getElementById('sidebarBackdrop').classList.remove('show');
+}
+function showPage(name){
+  if(usuarioLogado&&!usuarioPodeAcessar(name)){
+    showToast('Você não tem permissão para acessar esta tela.','error');
+    return;
+  }
+  document.querySelectorAll('.page').forEach(p=>p.style.display='none');
+  document.querySelectorAll('.nav-link').forEach(n=>n.classList.remove('active'));
+  document.getElementById('page-'+name).style.display='block';
+  document.getElementById('nav-'+name).classList.add('active');
+  currentPage=name;
+  renderPage(name);
+  fecharSidebarMobile();
+}
+function renderPage(name){
+  ({dashboard:renderDashboard,cadastro:renderCadastro,compra:renderCompra,venda:renderVenda,estoque:renderEstoque,
+    analise:renderAnaliseEstoque,clientes:renderClientes,orcamento:renderOrcamentos,empresa:renderEmpresa,
+    usuarios:renderUsuarios})[name]?.();
+}
+
+// ══════════════════════════════════════════════════════════
+//  MODAIS
+// ══════════════════════════════════════════════════════════
+function abrirModal(id){document.getElementById(id).style.display='flex';}
+function fecharModal(id){document.getElementById(id).style.display='none';}
+function fecharModalSe(e,id){if(e.target.id===id) fecharModal(id);}
+
+function confirmar(title,msg,fn){
+  document.getElementById('confirm-title').textContent=title;
+  document.getElementById('confirm-msg').textContent=msg;
+  document.getElementById('confirm-ok-btn').onclick=()=>{fecharModal('modal-confirm');fn();};
+  abrirModal('modal-confirm');
+}
+
+// ══════════════════════════════════════════════════════════
+//  FILTERS
+// ══════════════════════════════════════════════════════════
+let activeFilters={};
+let currentPage='dashboard';
+function buildFiltersHTML(page){
+  const motores=DB.get('motores');
+  const marcas=[...new Set(motores.map(m=>m.marca))];
+  const cvs=[...new Set(motores.map(m=>m.cv))].sort((a,b)=>a-b);
+  const volts=[...new Set(motores.map(m=>m.volt))];
+  const f=activeFilters;
+  return `
+    <div class="filter-group"><label>Ano</label><select id="flt-ano">
+      <option value="">Todos</option>${[2024,2025,2026].map(y=>`<option value="${y}"${f.ano==y?' selected':''}>${y}</option>`).join('')}
+    </select></div>
+    <div class="filter-group"><label>Mês</label><select id="flt-mes">
+      <option value="">Todos</option>${['Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez'].map((m,i)=>`<option value="${i+1}"${f.mes==i+1?' selected':''}>${m}</option>`).join('')}
+    </select></div>
+    <div class="filter-group"><label>Dia</label><input type="number" id="flt-dia" min="1" max="31" placeholder="DD" value="${f.dia||''}"></div>
+    <div class="filter-group"><label>CV</label><select id="flt-cv">
+      <option value="">Todos</option>${cvs.map(c=>`<option value="${c}"${f.cv==c?' selected':''}>${c} CV</option>`).join('')}
+    </select></div>
+    <div class="filter-group"><label>Voltagem</label><select id="flt-volt">
+      <option value="">Todas</option>${volts.map(v=>`<option value="${v}"${f.volt==v?' selected':''}>${v}</option>`).join('')}
+    </select></div>
+    <div class="filter-group"><label>Marca</label><select id="flt-marca">
+      <option value="">Todas</option>${marcas.map(m=>`<option value="${m}"${f.marca==m?' selected':''}>${m}</option>`).join('')}
+    </select></div>
+    <div style="display:flex;gap:8px;align-items:flex-end">
+      <button class="btn btn-red" style="padding:8px 16px" onclick="applyFilters('${page}')">Filtrar</button>
+      <button class="btn btn-ghost" style="padding:8px 14px" onclick="clearFilters('${page}')">Limpar</button>
+    </div>`;
+}
+function applyFilters(page){
+  activeFilters={
+    ano:document.getElementById('flt-ano')?.value||'',
+    mes:document.getElementById('flt-mes')?.value||'',
+    dia:document.getElementById('flt-dia')?.value||'',
+    cv:document.getElementById('flt-cv')?.value||'',
+    volt:document.getElementById('flt-volt')?.value||'',
+    marca:document.getElementById('flt-marca')?.value||'',
+  };
+  renderPage(page);
+}
+function clearFilters(page){activeFilters={};renderPage(page);}
+function filterByDate(list,field){
+  const f=activeFilters;
+  return list.filter(item=>{
+    const d=new Date(item[field]);
+    if(f.ano&&String(d.getFullYear())!==String(f.ano)) return false;
+    if(f.mes&&String(d.getMonth()+1)!==String(f.mes)) return false;
+    if(f.dia&&String(d.getDate())!==String(f.dia)) return false;
+    return true;
+  });
+}
+function filterByMotor(list){
+  const f=activeFilters,motores=DB.get('motores');
+  return list.filter(item=>{
+    const m=motores.find(x=>x.id===item.motorId);
+    if(!m) return false;
+    if(f.cv&&String(m.cv)!==String(f.cv)) return false;
+    if(f.volt&&m.volt!==f.volt) return false;
+    if(f.marca&&m.marca!==f.marca) return false;
+    return true;
+  });
+}
+
+// ══════════════════════════════════════════════════════════
+//  HELPERS
+// ══════════════════════════════════════════════════════════
+const fmt=v=>'R$ '+Number(v||0).toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2});
+const fmtDate=d=>{if(!d)return'—';const p=d.split('-');return`${p[2]}/${p[1]}/${p[0]}`;};
+const motorLabel=m=>`${m.marca} | ${m.cv} CV | ${m.volt}${m.modelo?' | '+m.modelo:''}`;
+const getMotorById=id=>DB.get('motores').find(m=>m.id===id);
+function nextId(key){const n=DB.getObj(key,1);DB.setObj(key,n+1);return n;}
+function precoMedioMotor(motorId){
+  const c=DB.get('compras').filter(c=>c.motorId===motorId);
+  if(!c.length) return 0;
+  const tot=c.reduce((s,x)=>s+x.valor*x.qty,0);
+  const qty=c.reduce((s,x)=>s+x.qty,0);
+  return qty?tot/qty:0;
+}
+function estoqueAtualMotor(motorId){
+  const e=DB.get('compras').filter(c=>c.motorId===motorId).reduce((s,c)=>s+c.qty,0);
+  const s=DB.get('vendas').filter(v=>v.motorId===motorId).reduce((s,v)=>s+v.qty,0);
+  return e-s;
+}
+
+function showToast(msg,type='success'){
+  const t=document.getElementById('toast');
+  const icons={success:'✅',error:'❌',warning:'⚠️'};
+  t.textContent=(icons[type]||'ℹ️')+' '+msg;
+  t.className='show '+type;
+  clearTimeout(t._t);
+  t._t=setTimeout(()=>t.className='',3400);
+}
+
+// ══════════════════════════════════════════════════════════
+//  CADASTRO DE MOTORES
+// ══════════════════════════════════════════════════════════
+function abrirModalMotor(id){
+  document.getElementById('modal-motor-title').textContent=id?'Editar Motor':'Novo Motor';
+  document.getElementById('m-id').value='';
+  document.getElementById('m-marca').value='';
+  document.getElementById('m-cv').value='';
+  document.getElementById('m-volt').value='';
+  document.getElementById('m-modelo').value='';
+  document.getElementById('m-desc').value='';
+  if(id){
+    const m=getMotorById(id);
+    if(m){document.getElementById('m-id').value=m.id;document.getElementById('m-marca').value=m.marca;document.getElementById('m-cv').value=m.cv;document.getElementById('m-volt').value=m.volt;document.getElementById('m-modelo').value=m.modelo||'';document.getElementById('m-desc').value=m.desc||'';}
+  }
+  abrirModal('modal-motor');
+}
+
+function salvarMotor(){
+  const marca=document.getElementById('m-marca').value.trim();
+  const cv=parseFloat(document.getElementById('m-cv').value);
+  const volt=document.getElementById('m-volt').value;
+  const modelo=document.getElementById('m-modelo').value.trim();
+  const desc=document.getElementById('m-desc').value.trim();
+  if(!marca||!cv||!volt){showToast('Preencha Marca, CV e Voltagem','error');return;}
+  const motores=DB.get('motores');
+  const existingId=parseInt(document.getElementById('m-id').value);
+  if(existingId){
+    const idx=motores.findIndex(m=>m.id===existingId);
+    if(idx>-1) motores[idx]={...motores[idx],marca,cv,volt,modelo,desc};
+    showToast('Motor atualizado!');
+  } else {
+    motores.push({id:nextId('motorNextId'),marca,cv,volt,modelo,desc});
+    showToast('Motor cadastrado!');
+  }
+  DB.set('motores',motores);
+  fecharModal('modal-motor');
+  renderCadastro();
+}
+
+function deletarMotor(id){
+  confirmar('Remover Motor','Tem certeza? Os lançamentos vinculados serão mantidos no histórico.',()=>{
+    DB.set('motores',DB.get('motores').filter(m=>m.id!==id));
+    renderCadastro();showToast('Motor removido','warning');
+  });
+}
+
+function renderCadastro(){
+  const motores=DB.get('motores');
+  const el=document.getElementById('tabela-motores');
+  if(!motores.length){el.innerHTML='<div class="empty-state"><div class="empty-icon">🔧</div>Nenhum motor cadastrado.<br>Clique em <strong>+ Novo Motor</strong> para começar.</div>';return;}
+  el.innerHTML=`<table><thead><tr><th>Marca</th><th>CV</th><th>Voltagem</th><th>Modelo</th><th>Estoque</th><th>Ações</th></tr></thead><tbody>
+    ${motores.map(m=>{
+      const est=estoqueAtualMotor(m.id);
+      return `<tr>
+        <td><strong>${m.marca}</strong></td>
+        <td>${m.cv} CV</td><td>${m.volt}</td><td>${m.modelo||'—'}</td>
+        <td><span class="badge ${est<=0?'red':est<=3?'yellow':'green'}">${est} un.</span></td>
+        <td><div class="td-actions">
+          <button class="btn-edit-sm" onclick="abrirModalMotor(${m.id})">✏️ Editar</button>
+          <button class="btn-danger-sm" onclick="deletarMotor(${m.id})">🗑 Remover</button>
+        </div></td>
+      </tr>`;
+    }).join('')}
+  </tbody></table>`;
+}
+
+// ══════════════════════════════════════════════════════════
+//  COMPRA
+// ══════════════════════════════════════════════════════════
+function abrirModalCompra(id){
+  document.getElementById('modal-compra-title').textContent=id?'Editar Compra':'Nova Compra';
+  document.getElementById('c-id').value='';
+  const motores=DB.get('motores');
+  document.getElementById('c-motor').innerHTML=motores.map(m=>`<option value="${m.id}">${motorLabel(m)}</option>`).join('');
+  document.getElementById('c-qty').value='';
+  document.getElementById('c-valor').value='';
+  document.getElementById('c-data').value=new Date().toISOString().split('T')[0];
+  document.getElementById('c-forn').value='';
+  if(id){
+    const c=DB.get('compras').find(x=>x.id===id);
+    if(c){document.getElementById('c-id').value=c.id;document.getElementById('c-motor').value=c.motorId;document.getElementById('c-qty').value=c.qty;document.getElementById('c-valor').value=c.valor;document.getElementById('c-data').value=c.data;document.getElementById('c-forn').value=c.forn||'';}
+  }
+  abrirModal('modal-compra');
+}
+
+function salvarCompra(){
+  const motorId=parseInt(document.getElementById('c-motor').value);
+  const qty=parseInt(document.getElementById('c-qty').value);
+  const valor=parseFloat(document.getElementById('c-valor').value);
+  const data=document.getElementById('c-data').value;
+  const forn=document.getElementById('c-forn').value;
+  if(!motorId||!qty||!valor||!data){showToast('Preencha todos os campos obrigatórios','error');return;}
+  const compras=DB.get('compras');
+  const existingId=parseInt(document.getElementById('c-id').value);
+  if(existingId){
+    const idx=compras.findIndex(c=>c.id===existingId);
+    if(idx>-1) compras[idx]={...compras[idx],motorId,qty,valor,data,forn};
+    showToast('Compra atualizada!');
+  } else {
+    compras.push({id:nextId('compraNextId'),motorId,qty,valor,data,forn,tipo:'compra'});
+    showToast(`Compra registrada — ${qty} un. adicionada(s)!`);
+  }
+  DB.set('compras',compras);
+  fecharModal('modal-compra');
+  renderCompra();
+}
+
+function reverterCompra(id){
+  const c=DB.get('compras').find(x=>x.id===id);
+  const m=getMotorById(c?.motorId);
+  confirmar('Reverter Compra',`Reverter a compra de ${c?.qty} un. de ${m?.marca||'?'} ${m?.cv||'?'}CV? Isso removerá as unidades do estoque.`,()=>{
+    // Verifica se há saldo suficiente
+    const estAtual=estoqueAtualMotor(c.motorId);
+    if(estAtual<c.qty){showToast(`Não é possível reverter: saldo insuficiente (${estAtual} un. disponíveis)`,'error');return;}
+    DB.set('compras',DB.get('compras').filter(x=>x.id!==id));
+    showToast('Compra revertida','warning');
+    renderCompra();
+  });
+}
+
+function renderCompra(){
+  document.getElementById('compra-filters').innerHTML=buildFiltersHTML('compra');
+  let compras=filterByMotor(filterByDate(DB.get('compras'),'data')).reverse();
+  const el=document.getElementById('tabela-compras');
+  if(!compras.length){el.innerHTML='<div class="empty-state"><div class="empty-icon">📥</div>Nenhuma compra registrada.<br>Clique em <strong>+ Nova Compra</strong>.</div>';return;}
+  el.innerHTML=`<table><thead><tr><th>Motor</th><th>Qtd</th><th>Valor Unit.</th><th>Total</th><th>Data</th><th>Fornecedor</th><th>Tipo</th><th>Ações</th></tr></thead><tbody>
+    ${compras.map(c=>{
+      const m=getMotorById(c.motorId);
+      const isAcerto=c.tipo==='acerto';
+      return `<tr>
+        <td>${m?`<strong>${m.marca}</strong> ${m.cv}CV ${m.volt}`:'—'}</td>
+        <td>${c.qty}</td><td>${fmt(c.valor)}</td><td>${fmt(c.valor*c.qty)}</td>
+        <td>${fmtDate(c.data)}</td>
+        <td style="color:var(--muted);font-size:12px">${c.forn||'—'}</td>
+        <td>${isAcerto?`<span class="acerto-badge">⚖️ Acerto</span>`:`<span class="badge blue">Compra</span>`}</td>
+        <td><div class="td-actions">
+          ${!isAcerto?`<button class="btn-edit-sm" onclick="abrirModalCompra(${c.id})">✏️</button>`:''}
+          <button class="btn-revert-sm" onclick="reverterCompra(${c.id})">↩ Reverter</button>
+        </div></td>
+      </tr>`;
+    }).join('')}
+  </tbody></table>`;
+}
+
+// ══════════════════════════════════════════════════════════
+//  VENDA
+// ══════════════════════════════════════════════════════════
+function abrirModalVenda(id){
+  document.getElementById('modal-venda-title').textContent=id?'Editar Venda':'Nova Venda';
+  document.getElementById('v-id').value='';
+  const motores=DB.get('motores');
+  document.getElementById('v-motor').innerHTML=motores.map(m=>`<option value="${m.id}">${motorLabel(m)}</option>`).join('');
+  document.getElementById('v-qty').value='';
+  document.getElementById('v-valor').value='';
+  document.getElementById('v-data').value=new Date().toISOString().split('T')[0];
+  document.getElementById('v-cliente').value='';
+  document.getElementById('v-resumo').style.display='none';
+  if(id){
+    const v=DB.get('vendas').find(x=>x.id===id);
+    if(v){document.getElementById('v-id').value=v.id;document.getElementById('v-motor').value=v.motorId;document.getElementById('v-qty').value=v.qty;document.getElementById('v-valor').value=v.valorVenda;document.getElementById('v-data').value=v.data;document.getElementById('v-cliente').value=v.cliente||'';}
+  }
+  atualizarInfoVenda();
+  abrirModal('modal-venda');
+}
+
+function atualizarInfoVenda(){
+  const motorId=parseInt(document.getElementById('v-motor')?.value);
+  if(!motorId) return;
+  const pm=precoMedioMotor(motorId);
+  const est=estoqueAtualMotor(motorId);
+  document.getElementById('v-pm-label').textContent=fmt(pm);
+  document.getElementById('v-est-label').textContent=est+' un.';
+  document.getElementById('venda-info-box').style.display='block';
+  calcVendaResumo();
+}
+
+function calcVendaResumo(){
+  const motorId=parseInt(document.getElementById('v-motor')?.value);
+  const qty=parseInt(document.getElementById('v-qty')?.value||0);
+  const vv=parseFloat(document.getElementById('v-valor')?.value||0);
+  const pm=precoMedioMotor(motorId);
+  const r=document.getElementById('v-resumo');
+  if(qty>0&&vv>0){
+    const lucro=(vv-pm)*qty;
+    r.style.display='block';
+    r.style.background=lucro>=0?'#22c55e10':'#D4000010';
+    r.style.border=`1px solid ${lucro>=0?'#22c55e30':'#D4000030'}`;
+    r.style.color=lucro>=0?'var(--green)':'var(--accent)';
+    r.innerHTML=`Receita: <strong>${fmt(vv*qty)}</strong> &nbsp;|&nbsp; Custo: <strong>${fmt(pm*qty)}</strong> &nbsp;|&nbsp; Lucro: <strong>${fmt(lucro)}</strong>`;
+  } else r.style.display='none';
+}
+
+function salvarVenda(){
+  const motorId=parseInt(document.getElementById('v-motor').value);
+  const qty=parseInt(document.getElementById('v-qty').value);
+  const valorVenda=parseFloat(document.getElementById('v-valor').value);
+  const data=document.getElementById('v-data').value;
+  const cliente=document.getElementById('v-cliente').value;
+  if(!motorId||!qty||!valorVenda||!data){showToast('Preencha todos os campos obrigatórios','error');return;}
+  const existingId=parseInt(document.getElementById('v-id').value);
+  const vendas=DB.get('vendas');
+  if(existingId){
+    const vOld=vendas.find(v=>v.id===existingId);
+    const estDisp=estoqueAtualMotor(motorId)+( vOld?.qty||0);
+    if(qty>estDisp){showToast(`Estoque insuficiente! Disponível: ${estDisp} un.`,'error');return;}
+    const idx=vendas.findIndex(v=>v.id===existingId);
+    if(idx>-1) vendas[idx]={...vendas[idx],motorId,qty,valorVenda,precoMedio:precoMedioMotor(motorId),data,cliente};
+    showToast('Venda atualizada!');
+  } else {
+    const estDisp=estoqueAtualMotor(motorId);
+    if(qty>estDisp){showToast(`Estoque insuficiente! Disponível: ${estDisp} un.`,'error');return;}
+    vendas.push({id:nextId('vendaNextId'),motorId,qty,valorVenda,precoMedio:precoMedioMotor(motorId),data,cliente,tipo:'venda'});
+    showToast(`Venda registrada — ${qty} un. saíram!`);
+  }
+  DB.set('vendas',vendas);
+  fecharModal('modal-venda');
+  renderVenda();
+}
+
+function reverterVenda(id){
+  const v=DB.get('vendas').find(x=>x.id===id);
+  const m=getMotorById(v?.motorId);
+  confirmar('Reverter Venda',`Reverter a venda de ${v?.qty} un. de ${m?.marca||'?'} ${m?.cv||'?'}CV? As unidades voltam ao estoque.`,()=>{
+    DB.set('vendas',DB.get('vendas').filter(x=>x.id!==id));
+    showToast('Venda revertida','warning');
+    renderVenda();
+  });
+}
+
+function renderVenda(){
+  document.getElementById('venda-filters').innerHTML=buildFiltersHTML('venda');
+  let vendas=filterByMotor(filterByDate(DB.get('vendas'),'data')).reverse();
+  const el=document.getElementById('tabela-vendas');
+  if(!vendas.length){el.innerHTML='<div class="empty-state"><div class="empty-icon">📤</div>Nenhuma venda registrada.<br>Clique em <strong>+ Nova Venda</strong>.</div>';return;}
+  el.innerHTML=`<table><thead><tr><th>Motor</th><th>Qtd</th><th>Preço Médio</th><th>Val. Venda</th><th>Lucro</th><th>Data</th><th>Cliente</th><th>Tipo</th><th>Ações</th></tr></thead><tbody>
+    ${vendas.map(v=>{
+      const m=getMotorById(v.motorId);
+      const lucro=(v.valorVenda-v.precoMedio)*v.qty;
+      const isAcerto=v.tipo==='acerto';
+      const tipoBadge=isAcerto?`<span class="acerto-badge">⚖️ Acerto</span>`:
+        v.origemOrcamento?`<span class="badge blue" title="Venda gerada automaticamente ao aprovar o ${v.origemOrcamento}">📄 ${v.origemOrcamento}</span>`:
+        `<span class="badge blue">Venda</span>`;
+      return `<tr>
+        <td>${m?`<strong>${m.marca}</strong> ${m.cv}CV ${m.volt}`:'—'}</td>
+        <td>${v.qty}</td><td>${fmt(v.precoMedio)}</td><td>${fmt(v.valorVenda)}</td>
+        <td><span class="badge ${lucro>=0?'green':'red'}">${lucro>=0?'+':''}${fmt(lucro)}</span></td>
+        <td>${fmtDate(v.data)}</td>
+        <td style="color:var(--muted);font-size:12px">${v.cliente||'—'}</td>
+        <td>${tipoBadge}</td>
+        <td><div class="td-actions">
+          ${!isAcerto?`<button class="btn-edit-sm" onclick="abrirModalVenda(${v.id})">✏️</button>`:''}
+          <button class="btn-revert-sm" onclick="reverterVenda(${v.id})">↩ Reverter</button>
+        </div></td>
+      </tr>`;
+    }).join('')}
+  </tbody></table>`;
+}
+
+// ══════════════════════════════════════════════════════════
+//  ESTOQUE
+// ══════════════════════════════════════════════════════════
+function abrirModalAcerto(){
+  const motores=DB.get('motores');
+  if(!motores.length){showToast('Cadastre motores primeiro','error');return;}
+  document.getElementById('a-motor').innerHTML=motores.map(m=>`<option value="${m.id}">${motorLabel(m)}</option>`).join('');
+  document.getElementById('a-qty').value='';
+  document.getElementById('a-data').value=new Date().toISOString().split('T')[0];
+  document.getElementById('a-motivo').value='';
+  document.getElementById('a-resultado').style.display='none';
+  document.getElementById('acerto-info-box').style.display='none';
+  atualizarInfoAcerto();
+  abrirModal('modal-acerto');
+}
+
+function atualizarInfoAcerto(){
+  const motorId=parseInt(document.getElementById('a-motor')?.value);
+  if(!motorId) return;
+  const saldo=estoqueAtualMotor(motorId);
+  const pm=precoMedioMotor(motorId);
+  document.getElementById('a-saldo-label').textContent=saldo+' un.';
+  document.getElementById('a-pm-label').textContent=fmt(pm);
+  document.getElementById('acerto-info-box').style.display='block';
+  calcAcerto();
+}
+
+function calcAcerto(){
+  const motorId=parseInt(document.getElementById('a-motor')?.value);
+  const qtyFisica=parseInt(document.getElementById('a-qty')?.value);
+  const el=document.getElementById('a-resultado');
+  if(isNaN(qtyFisica)){el.style.display='none';return;}
+  const saldo=estoqueAtualMotor(motorId);
+  const diff=qtyFisica-saldo;
+  el.style.display='block';
+  if(diff===0){
+    el.style.background='#22c55e10';el.style.border='1px solid #22c55e30';el.style.color='var(--green)';
+    el.innerHTML='✅ Estoque correto! Nenhum ajuste necessário.';
+  } else if(diff>0){
+    el.style.background='#3b82f610';el.style.border='1px solid #3b82f630';el.style.color='var(--blue)';
+    el.innerHTML=`📥 Serão adicionadas <strong>${diff} unidade(s)</strong> via lançamento de entrada (acerto positivo).`;
+  } else {
+    el.style.background='#D4000010';el.style.border='1px solid #D4000030';el.style.color='var(--accent)';
+    el.innerHTML=`📤 Serão removidas <strong>${Math.abs(diff)} unidade(s)</strong> via lançamento de saída (acerto negativo).`;
+  }
+}
+
+function salvarAcerto(){
+  const motorId=parseInt(document.getElementById('a-motor').value);
+  const qtyFisica=parseInt(document.getElementById('a-qty').value);
+  const data=document.getElementById('a-data').value;
+  const motivo=document.getElementById('a-motivo').value||'Acerto de estoque';
+  if(isNaN(qtyFisica)||!data){showToast('Preencha quantidade e data','error');return;}
+  const saldo=estoqueAtualMotor(motorId);
+  const diff=qtyFisica-saldo;
+  if(diff===0){showToast('Estoque já está correto, nenhum ajuste feito','warning');fecharModal('modal-acerto');return;}
+  const pm=precoMedioMotor(motorId)||0;
+  if(diff>0){
+    const compras=DB.get('compras');
+    compras.push({id:nextId('compraNextId'),motorId,qty:diff,valor:pm||0,data,forn:motivo,tipo:'acerto'});
+    DB.set('compras',compras);
+  } else {
+    const vendas=DB.get('vendas');
+    vendas.push({id:nextId('vendaNextId'),motorId,qty:Math.abs(diff),valorVenda:pm||0,precoMedio:pm||0,data,cliente:motivo,tipo:'acerto'});
+    DB.set('vendas',vendas);
+  }
+  fecharModal('modal-acerto');
+  showToast(`Acerto aplicado! ${diff>0?'+':''}${diff} un. ajustadas.`);
+  renderEstoque();
+}
+
+function renderEstoque(){
+  document.getElementById('estoque-filters').innerHTML=buildFiltersHTML('estoque');
+  const f=activeFilters;
+  let motores=DB.get('motores');
+  if(f.cv) motores=motores.filter(m=>String(m.cv)===String(f.cv));
+  if(f.volt) motores=motores.filter(m=>m.volt===f.volt);
+  if(f.marca) motores=motores.filter(m=>m.marca===f.marca);
+  const el=document.getElementById('tabela-estoque');
+  if(!motores.length){el.innerHTML='<div class="empty-state"><div class="empty-icon">📦</div>Nenhum motor encontrado com os filtros aplicados.</div>';return;}
+  el.innerHTML=`<table><thead><tr>
+    <th>Marca</th><th>CV</th><th>Voltagem</th><th>Modelo</th>
+    <th>Entradas</th><th>Saídas</th><th>Saldo</th>
+    <th>Preço Médio</th><th>Valor Total</th><th>Status</th><th>Ações</th>
+  </tr></thead><tbody>
+    ${motores.map(m=>{
+      const est=estoqueAtualMotor(m.id);
+      const pm=precoMedioMotor(m.id);
+      const e=DB.get('compras').filter(c=>c.motorId===m.id).reduce((s,c)=>s+c.qty,0);
+      const s=DB.get('vendas').filter(v=>v.motorId===m.id).reduce((s,v)=>s+v.qty,0);
+      return `<tr>
+        <td><strong>${m.marca}</strong></td><td>${m.cv} CV</td><td>${m.volt}</td><td>${m.modelo||'—'}</td>
+        <td>${e}</td><td>${s}</td><td><strong>${est}</strong></td>
+        <td>${fmt(pm)}</td><td>${fmt(pm*est)}</td>
+        <td>${est<=0?'<span class="badge red">Zerado</span>':est<=3?'<span class="badge yellow">Baixo</span>':'<span class="badge green">OK</span>'}</td>
+        <td><button class="btn-edit-sm" onclick="abrirModalAcertoMotor(${m.id})">⚖️ Acerto</button></td>
+      </tr>`;
+    }).join('')}
+  </tbody></table>`;
+}
+
+function abrirModalAcertoMotor(motorId){
+  abrirModalAcerto();
+  setTimeout(()=>{
+    document.getElementById('a-motor').value=motorId;
+    atualizarInfoAcerto();
+  },50);
+}
+
+// ══════════════════════════════════════════════════════════
+//  ANÁLISE DE ESTOQUE GERAL (a preço de custo)
+// ══════════════════════════════════════════════════════════
+let analiseAno=new Date().getFullYear();
+
+function mudarAnoAnalise(){
+  analiseAno=parseInt(document.getElementById('analise-ano-select').value);
+  renderAnaliseEstoque();
+}
+
+// Saldo (a custo) acumulado de tudo que aconteceu ANTES do 1º dia de ano/mes
+function saldoCustoAcumuladoAntes(ano,mes){
+  const limite=new Date(ano,mes,1);
+  const totalCompras=DB.get('compras').filter(c=>new Date(c.data)<limite).reduce((s,c)=>s+c.valor*c.qty,0);
+  const totalVendasCusto=DB.get('vendas').filter(v=>new Date(v.data)<limite).reduce((s,v)=>s+v.precoMedio*v.qty,0);
+  return totalCompras-totalVendasCusto;
+}
+
+function renderAnaliseEstoque(){
+  const compras=DB.get('compras');
+  const vendas=DB.get('vendas');
+  const anos=new Set([analiseAno,new Date().getFullYear()]);
+  compras.forEach(c=>anos.add(new Date(c.data).getFullYear()));
+  vendas.forEach(v=>anos.add(new Date(v.data).getFullYear()));
+  const anosArr=[...anos].sort((a,b)=>a-b);
+  document.getElementById('analise-ano-select').innerHTML=anosArr.map(a=>`<option value="${a}" ${a===analiseAno?'selected':''}>${a}</option>`).join('');
+
+  const meses=['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'];
+  let saldoAcum=saldoCustoAcumuladoAntes(analiseAno,0);
+  const linhas=[];
+  for(let m=0;m<12;m++){
+    const comprasMes=compras.filter(c=>{const d=new Date(c.data);return d.getFullYear()===analiseAno&&d.getMonth()===m;});
+    const vendasMes=vendas.filter(v=>{const d=new Date(v.data);return d.getFullYear()===analiseAno&&d.getMonth()===m;});
+    const entradas=comprasMes.reduce((s,c)=>s+c.valor*c.qty,0);
+    const saidas=vendasMes.reduce((s,v)=>s+v.precoMedio*v.qty,0);
+    const saldoAnterior=saldoAcum;
+    const saldoFinal=saldoAnterior+entradas-saidas;
+    linhas.push({mes:meses[m],saldoAnterior,entradas,saidas,saldoFinal,
+      qtyE:comprasMes.reduce((s,c)=>s+c.qty,0),qtyS:vendasMes.reduce((s,v)=>s+v.qty,0)});
+    saldoAcum=saldoFinal;
+  }
+
+  const totalEntradasAno=linhas.reduce((s,l)=>s+l.entradas,0);
+  const totalSaidasAno=linhas.reduce((s,l)=>s+l.saidas,0);
+  const saldoInicialAno=linhas[0].saldoAnterior;
+  const saldoFinalAno=linhas[11].saldoFinal;
+
+  document.getElementById('analise-cards').innerHTML=`
+    <div class="stat-card c-dark"><div class="lbl">Saldo Inicial (Jan/${analiseAno})</div><div class="val">${fmt(saldoInicialAno)}</div><div class="sub">Estoque a custo no início do ano</div><div class="ci">📦</div></div>
+    <div class="stat-card c-green"><div class="lbl">Entradas no Ano (custo)</div><div class="val">${fmt(totalEntradasAno)}</div><div class="sub">${linhas.reduce((s,l)=>s+l.qtyE,0)} unidades compradas</div><div class="ci">📥</div></div>
+    <div class="stat-card c-red"><div class="lbl">Saídas no Ano (custo)</div><div class="val">${fmt(totalSaidasAno)}</div><div class="sub">${linhas.reduce((s,l)=>s+l.qtyS,0)} unidades vendidas</div><div class="ci">📤</div></div>
+    <div class="stat-card c-gold"><div class="lbl">Saldo Final (custo)</div><div class="val">${fmt(saldoFinalAno)}</div><div class="sub">Estoque a custo em Dez/${analiseAno}</div><div class="ci">💰</div></div>`;
+
+  document.getElementById('tabela-analise').innerHTML=`<table><thead><tr>
+    <th>Mês</th><th>Saldo Anterior (custo)</th><th>+ Entradas (custo)</th><th>− Saídas (custo)</th><th>= Saldo Final (custo)</th>
+  </tr></thead><tbody>
+    ${linhas.map(l=>`<tr>
+      <td><strong>${l.mes}</strong></td>
+      <td>${fmt(l.saldoAnterior)}</td>
+      <td style="color:var(--green)">+ ${fmt(l.entradas)}</td>
+      <td style="color:var(--accent)">− ${fmt(l.saidas)}</td>
+      <td><strong>${fmt(l.saldoFinal)}</strong></td>
+    </tr>`).join('')}
+  </tbody></table>`;
+}
+
+// ══════════════════════════════════════════════════════════
+//  CLIENTES
+// ══════════════════════════════════════════════════════════
+function abrirModalCliente(id){
+  document.getElementById('modal-cliente-title').textContent=id?'Editar Cliente':'Novo Cliente';
+  ['cl-id','cl-nome','cl-cnpj','cl-ie','cl-endereco','cl-cidade','cl-uf','cl-cep','cl-telefone','cl-email','cl-contato']
+    .forEach(f=>document.getElementById(f).value='');
+  if(id){
+    const c=DB.get('clientes').find(x=>x.id===id);
+    if(c){
+      document.getElementById('cl-id').value=c.id;
+      document.getElementById('cl-nome').value=c.nome||'';
+      document.getElementById('cl-cnpj').value=c.cnpj||'';
+      document.getElementById('cl-ie').value=c.ie||'';
+      document.getElementById('cl-endereco').value=c.endereco||'';
+      document.getElementById('cl-cidade').value=c.cidade||'';
+      document.getElementById('cl-uf').value=c.uf||'';
+      document.getElementById('cl-cep').value=c.cep||'';
+      document.getElementById('cl-telefone').value=c.telefone||'';
+      document.getElementById('cl-email').value=c.email||'';
+      document.getElementById('cl-contato').value=c.contato||'';
+    }
+  }
+  abrirModal('modal-cliente');
+}
+
+function salvarCliente(){
+  const nome=document.getElementById('cl-nome').value.trim();
+  if(!nome){showToast('Informe o nome/razão social do cliente','error');return;}
+  const dados={
+    nome,
+    cnpj:document.getElementById('cl-cnpj').value.trim(),
+    ie:document.getElementById('cl-ie').value.trim(),
+    endereco:document.getElementById('cl-endereco').value.trim(),
+    cidade:document.getElementById('cl-cidade').value.trim(),
+    uf:document.getElementById('cl-uf').value.trim().toUpperCase(),
+    cep:document.getElementById('cl-cep').value.trim(),
+    telefone:document.getElementById('cl-telefone').value.trim(),
+    email:document.getElementById('cl-email').value.trim(),
+    contato:document.getElementById('cl-contato').value.trim(),
+  };
+  const clientes=DB.get('clientes');
+  const existingId=parseInt(document.getElementById('cl-id').value);
+  if(existingId){
+    const idx=clientes.findIndex(c=>c.id===existingId);
+    if(idx>-1) clientes[idx]={...clientes[idx],...dados};
+    showToast('Cliente atualizado!');
+  } else {
+    clientes.push({id:nextId('clienteNextId'),...dados});
+    showToast('Cliente cadastrado!');
+  }
+  DB.set('clientes',clientes);
+  fecharModal('modal-cliente');
+  renderClientes();
+}
+
+function deletarCliente(id){
+  confirmar('Remover Cliente','Tem certeza? Orçamentos já emitidos manterão o histórico do cliente.',()=>{
+    DB.set('clientes',DB.get('clientes').filter(c=>c.id!==id));
+    renderClientes();showToast('Cliente removido','warning');
+  });
+}
+
+function renderClientes(){
+  const clientes=DB.get('clientes');
+  const el=document.getElementById('tabela-clientes');
+  if(!clientes.length){el.innerHTML='<div class="empty-state"><div class="empty-icon">👥</div>Nenhum cliente cadastrado.<br>Clique em <strong>+ Novo Cliente</strong> para começar.</div>';return;}
+  el.innerHTML=`<table><thead><tr><th>Nome / Razão Social</th><th>CNPJ/CPF</th><th>Cidade/UF</th><th>Telefone</th><th>E-mail</th><th>Ações</th></tr></thead><tbody>
+    ${clientes.map(c=>`<tr>
+      <td><strong>${c.nome}</strong></td>
+      <td>${c.cnpj||'—'}</td>
+      <td>${c.cidade?c.cidade+(c.uf?'/'+c.uf:''):'—'}</td>
+      <td>${c.telefone||'—'}</td>
+      <td style="color:var(--muted);font-size:12px">${c.email||'—'}</td>
+      <td><div class="td-actions">
+        <button class="btn-edit-sm" onclick="abrirModalCliente(${c.id})">✏️ Editar</button>
+        <button class="btn-danger-sm" onclick="deletarCliente(${c.id})">🗑 Remover</button>
+      </div></td>
+    </tr>`).join('')}
+  </tbody></table>`;
+}
+
+// ══════════════════════════════════════════════════════════
+//  MINHA EMPRESA
+// ══════════════════════════════════════════════════════════
+function renderEmpresa(){
+  const e=DB.getObj('empresa',{nome:'MEGA'});
+  document.getElementById('emp-nome').value=e.nome||'MEGA';
+  document.getElementById('emp-cnpj').value=e.cnpj||'';
+  document.getElementById('emp-ie').value=e.ie||'';
+  document.getElementById('emp-endereco').value=e.endereco||'';
+  document.getElementById('emp-cidade').value=e.cidade||'';
+  document.getElementById('emp-uf').value=e.uf||'';
+  document.getElementById('emp-cep').value=e.cep||'';
+  document.getElementById('emp-telefone').value=e.telefone||'';
+  document.getElementById('emp-email').value=e.email||'';
+  document.getElementById('emp-site').value=e.site||'';
+}
+
+function salvarEmpresa(){
+  const empresa={
+    nome:document.getElementById('emp-nome').value.trim()||'MEGA',
+    cnpj:document.getElementById('emp-cnpj').value.trim(),
+    ie:document.getElementById('emp-ie').value.trim(),
+    endereco:document.getElementById('emp-endereco').value.trim(),
+    cidade:document.getElementById('emp-cidade').value.trim(),
+    uf:document.getElementById('emp-uf').value.trim().toUpperCase(),
+    cep:document.getElementById('emp-cep').value.trim(),
+    telefone:document.getElementById('emp-telefone').value.trim(),
+    email:document.getElementById('emp-email').value.trim(),
+    site:document.getElementById('emp-site').value.trim(),
+  };
+  DB.setObj('empresa',empresa);
+  showToast('Dados da empresa salvos!');
+}
+
+// ══════════════════════════════════════════════════════════
+//  USUÁRIOS / PERMISSÕES
+// ══════════════════════════════════════════════════════════
+function renderPermGrid(marcados){
+  const grid=document.getElementById('usr-perm-grid');
+  grid.innerHTML=PAGINAS_APP.map(p=>`
+    <label class="perm-item">
+      <input type="checkbox" data-perm="${p.key}" ${marcados.includes(p.key)?'checked':''}>
+      <span>${p.label}</span>
+    </label>`).join('');
+}
+
+function aplicarModeloPermissao(modelo){
+  const alvo=modelo==='admin'?PERMISSOES_ADMIN:PERMISSOES_VENDAS;
+  document.querySelectorAll('#usr-perm-grid input[type=checkbox]').forEach(cb=>{
+    cb.checked=alvo.includes(cb.dataset.perm);
+  });
+  document.getElementById('usr-perfil').value=modelo==='admin'?'Administrador':'Vendas';
+}
+
+function toggleEyeUsuario(){
+  const p=document.getElementById('usr-senha'),b=document.getElementById('eyeBtnUsuario');
+  p.type=p.type==='password'?'text':'password';
+  b.textContent=p.type==='text'?'🙈':'👁️';
+}
+
+function abrirModalUsuario(id){
+  document.getElementById('modal-usuario-title').textContent=id?'Editar Usuário':'Novo Usuário';
+  document.getElementById('usr-id').value='';
+  document.getElementById('usr-usuario').value='';
+  document.getElementById('usr-perfil').value='';
+  document.getElementById('usr-senha').value='';
+  document.getElementById('usr-senha').type='password';
+  document.getElementById('eyeBtnUsuario').textContent='👁️';
+  renderPermGrid(['dashboard']);
+
+  if(id){
+    const u=DB.get('usuarios').find(x=>x.id===id);
+    if(u){
+      document.getElementById('usr-id').value=u.id;
+      document.getElementById('usr-usuario').value=u.usuario;
+      document.getElementById('usr-perfil').value=u.perfil||'';
+      document.getElementById('usr-senha').value=u.senha||'';
+      renderPermGrid(u.permissoes||[]);
+    }
+  }
+  abrirModal('modal-usuario');
+}
+
+function salvarUsuario(){
+  const usuario=document.getElementById('usr-usuario').value.trim();
+  const perfil=document.getElementById('usr-perfil').value.trim()||'Usuário';
+  const senha=document.getElementById('usr-senha').value;
+  const permissoes=[...document.querySelectorAll('#usr-perm-grid input[type=checkbox]:checked')].map(cb=>cb.dataset.perm);
+
+  if(!usuario){showToast('Informe o nome de usuário (login)','error');return;}
+  if(!senha){showToast('Informe uma senha','error');return;}
+  if(!permissoes.length){showToast('Selecione ao menos uma tela de permissão','error');return;}
+
+  const usuarios=DB.get('usuarios');
+  const existingId=parseInt(document.getElementById('usr-id').value);
+  const duplicado=usuarios.find(u=>u.usuario===usuario&&u.id!==existingId);
+  if(duplicado){showToast('Já existe um usuário com esse login','error');return;}
+
+  if(existingId){
+    const idx=usuarios.findIndex(u=>u.id===existingId);
+    usuarios[idx]={...usuarios[idx],usuario,perfil,senha,permissoes};
+    showToast('Usuário atualizado!');
+    if(usuarioLogado&&usuarioLogado.id===existingId){
+      usuarioLogado=usuarios[idx];
+      document.getElementById('sidebarUserRole').textContent=usuarioLogado.perfil;
+      aplicarPermissoesNav();
+    }
+  } else {
+    usuarios.push({id:nextId('usuarioNextId'),usuario,perfil,senha,permissoes});
+    showToast('Usuário cadastrado!');
+  }
+  DB.set('usuarios',usuarios);
+  fecharModal('modal-usuario');
+  renderUsuarios();
+}
+
+function deletarUsuario(id){
+  const usuarios=DB.get('usuarios');
+  if(usuarios.length<=1){showToast('É preciso manter ao menos um usuário cadastrado.','error');return;}
+  if(usuarioLogado&&usuarioLogado.id===id){showToast('Você não pode excluir o usuário com o qual está logado.','error');return;}
+  confirmar('Remover Usuário','Tem certeza que deseja remover este usuário? Ele perderá o acesso ao sistema.',()=>{
+    DB.set('usuarios',DB.get('usuarios').filter(u=>u.id!==id));
+    renderUsuarios();showToast('Usuário removido','warning');
+  });
+}
+
+function renderUsuarios(){
+  const usuarios=DB.get('usuarios');
+  const el=document.getElementById('tabela-usuarios');
+  if(!usuarios.length){el.innerHTML='<div class="empty-state"><div class="empty-icon">🔐</div>Nenhum usuário cadastrado.</div>';return;}
+  el.innerHTML=`<table><thead><tr><th>Usuário</th><th>Perfil</th><th>Telas Permitidas</th><th>Ações</th></tr></thead><tbody>
+    ${usuarios.map(u=>{
+      const perfilClasse=(u.perfil||'').toLowerCase().includes('admin')?'admin':(u.perfil||'').toLowerCase().includes('venda')?'vendas':'';
+      const telas=(u.permissoes||[]).map(k=>PAGINAS_APP.find(p=>p.key===k)?.label||k);
+      return `<tr>
+        <td><strong>${u.usuario}</strong>${usuarioLogado&&usuarioLogado.id===u.id?' <span style="color:var(--muted);font-size:11px">(você)</span>':''}</td>
+        <td><span class="perfil-badge ${perfilClasse}">${u.perfil||'—'}</span></td>
+        <td style="font-size:11.5px;color:var(--muted)">${telas.length===PAGINAS_APP.length?'Acesso total':telas.join(', ')}</td>
+        <td><div class="td-actions">
+          <button class="btn-edit-sm" onclick="abrirModalUsuario(${u.id})">✏️ Editar</button>
+          <button class="btn-danger-sm" onclick="deletarUsuario(${u.id})">🗑 Remover</button>
+        </div></td>
+      </tr>`;
+    }).join('')}
+  </tbody></table>`;
+}
+
+// ══════════════════════════════════════════════════════════
+//  ORÇAMENTOS
+// ══════════════════════════════════════════════════════════
+let orcItensTemp=[];
+let orcPagamentoTemp={tipo:'vista',parcelas:[],intervalo:30};
+
+function abrirModalOrcamento(id){
+  const clientes=DB.get('clientes');
+  if(!clientes.length){showToast('Cadastre um cliente antes de criar um orçamento','error');return;}
+  const motores=DB.get('motores');
+  if(!motores.length){showToast('Cadastre ao menos um motor antes de criar um orçamento','error');return;}
+
+  document.getElementById('modal-orcamento-title').textContent=id?'Editar Orçamento':'Novo Orçamento';
+  document.getElementById('orc-id').value='';
+  document.getElementById('orc-cliente').innerHTML=clientes.map(c=>`<option value="${c.id}">${c.nome}${c.cnpj?' — '+c.cnpj:''}</option>`).join('');
+  document.getElementById('orc-data').value=new Date().toISOString().split('T')[0];
+  document.getElementById('orc-validade').value=15;
+  document.getElementById('orc-status').value='enviado';
+  document.getElementById('orc-cond').value='';
+  document.getElementById('orc-prazo').value='';
+  document.getElementById('orc-obs').value='';
+  document.getElementById('orc-desconto').value=0;
+  orcItensTemp=[];
+  orcPagamentoTemp={tipo:'vista',parcelas:[],intervalo:30};
+
+  if(id){
+    const o=DB.get('orcamentos').find(x=>x.id===id);
+    if(o){
+      document.getElementById('orc-id').value=o.id;
+      document.getElementById('orc-cliente').value=o.clienteId;
+      document.getElementById('orc-data').value=o.data;
+      document.getElementById('orc-validade').value=o.validadeDias;
+      document.getElementById('orc-status').value=o.status||'enviado';
+      document.getElementById('orc-cond').value=o.condPagamento||'';
+      document.getElementById('orc-prazo').value=o.prazoEntrega||'';
+      document.getElementById('orc-obs').value=o.obs||'';
+      document.getElementById('orc-desconto').value=o.desconto||0;
+      orcItensTemp=JSON.parse(JSON.stringify(o.itens||[]));
+      if(o.pagamento) orcPagamentoTemp=JSON.parse(JSON.stringify(o.pagamento));
+    }
+  } else {
+    adicionarItemOrc();
+  }
+  renderOrcItensTable();
+  atualizarResumoPagamento();
+  atualizarAvisoStatusModal();
+  abrirModal('modal-orcamento');
+}
+
+function atualizarAvisoStatusModal(){
+  const el=document.getElementById('orc-status-aviso');
+  if(!el) return;
+  el.style.display=document.getElementById('orc-status').value==='aprovado'?'block':'none';
+}
+
+function adicionarItemOrc(){
+  const motores=DB.get('motores');
+  if(!motores.length){showToast('Cadastre motores primeiro','error');return;}
+  orcItensTemp.push({motorId:motores[0].id,qty:1,valorUnit:Number((precoMedioMotor(motores[0].id)||0).toFixed(2))});
+  renderOrcItensTable();
+}
+
+function removerItemOrc(idx){
+  orcItensTemp.splice(idx,1);
+  renderOrcItensTable();
+}
+
+function atualizarItemOrc(idx,campo,valor){
+  if(campo==='motorId') orcItensTemp[idx].motorId=parseInt(valor);
+  else if(campo==='qty') orcItensTemp[idx].qty=parseInt(valor)||0;
+  else if(campo==='valorUnit') orcItensTemp[idx].valorUnit=parseFloat(valor)||0;
+  renderOrcItensTable();
+}
+
+function renderOrcItensTable(){
+  const motores=DB.get('motores');
+  const tbody=document.getElementById('orc-itens-tbody');
+  if(!orcItensTemp.length){
+    tbody.innerHTML='<tr><td colspan="5" style="text-align:center;color:var(--muted);padding:16px">Nenhum item adicionado</td></tr>';
+  } else {
+    tbody.innerHTML=orcItensTemp.map((it,idx)=>`
+      <tr>
+        <td><select class="orc-mini-input" onchange="atualizarItemOrc(${idx},'motorId',this.value)">
+          ${motores.map(m=>`<option value="${m.id}" ${m.id===it.motorId?'selected':''}>${motorLabel(m)}</option>`).join('')}
+        </select></td>
+        <td><input type="number" min="1" class="orc-mini-input" value="${it.qty}" oninput="atualizarItemOrc(${idx},'qty',this.value)"></td>
+        <td><input type="number" min="0" step="0.01" class="orc-mini-input" value="${it.valorUnit}" oninput="atualizarItemOrc(${idx},'valorUnit',this.value)"></td>
+        <td style="text-align:right;font-weight:700;white-space:nowrap">${fmt(it.qty*it.valorUnit)}</td>
+        <td><button class="btn-danger-sm" onclick="removerItemOrc(${idx})">🗑</button></td>
+      </tr>`).join('');
+  }
+  const subtotal=orcItensTemp.reduce((s,it)=>s+it.qty*it.valorUnit,0);
+  const desconto=parseFloat(document.getElementById('orc-desconto')?.value||0);
+  document.getElementById('orc-subtotal').textContent=fmt(subtotal);
+  document.getElementById('orc-total').textContent=fmt(Math.max(0,subtotal-desconto));
+}
+
+function orcamentoTotalAtual(){
+  const desconto=parseFloat(document.getElementById('orc-desconto')?.value||0)||0;
+  return Math.max(0,orcItensTemp.reduce((s,it)=>s+it.qty*it.valorUnit,0)-desconto);
+}
+
+// ── Forma de Pagamento / Parcelamento ──
+let pgParcelasTemp=[];
+
+function abrirModalPagamento(){
+  const total=orcamentoTotalAtual();
+  document.getElementById('pg-total-orc').textContent=fmt(total);
+  document.getElementById('pg-tipo').value=orcPagamentoTemp.tipo||'vista';
+  pgParcelasTemp=orcPagamentoTemp.parcelas&&orcPagamentoTemp.parcelas.length?JSON.parse(JSON.stringify(orcPagamentoTemp.parcelas)):[];
+  document.getElementById('pg-num-parcelas').value=pgParcelasTemp.length||2;
+  document.getElementById('pg-data-primeira').value=pgParcelasTemp[0]?.data||document.getElementById('orc-data').value||new Date().toISOString().split('T')[0];
+  document.getElementById('pg-intervalo').value=orcPagamentoTemp.intervalo||30;
+  mudarTipoPagamento();
+  if(document.getElementById('pg-tipo').value==='parcelado'){
+    if(!pgParcelasTemp.length) gerarParcelasAuto(); else renderParcelasTable();
+  }
+  abrirModal('modal-pagamento');
+}
+
+function mudarTipoPagamento(){
+  const parcelado=document.getElementById('pg-tipo').value==='parcelado';
+  document.getElementById('pg-num-parcelas-wrap').style.display=parcelado?'flex':'none';
+  document.getElementById('pg-data-primeira-wrap').style.display=parcelado?'flex':'none';
+  document.getElementById('pg-intervalo-wrap').style.display=parcelado?'flex':'none';
+  document.getElementById('pg-parcelado-area').style.display=parcelado?'block':'none';
+  if(parcelado&&!pgParcelasTemp.length) gerarParcelasAuto();
+}
+
+function gerarParcelasAuto(){
+  const total=orcamentoTotalAtual();
+  const n=Math.max(1,parseInt(document.getElementById('pg-num-parcelas').value)||1);
+  const dataIni=document.getElementById('pg-data-primeira').value||new Date().toISOString().split('T')[0];
+  const intervalo=Math.max(1,parseInt(document.getElementById('pg-intervalo').value)||30);
+  const valorParcela=Math.floor((total/n)*100)/100;
+  let soma=0;
+  const parcelas=[];
+  const dIni=new Date(dataIni+'T00:00:00');
+  for(let i=0;i<n;i++){
+    let valor=valorParcela;
+    if(i===n-1) valor=Number((total-soma).toFixed(2));
+    else soma+=valorParcela;
+    const d=new Date(dIni);
+    d.setDate(d.getDate()+intervalo*i);
+    parcelas.push({numero:i+1,valor,data:d.toISOString().split('T')[0]});
+  }
+  pgParcelasTemp=parcelas;
+  renderParcelasTable();
+}
+
+function adicionarParcelaManual(){
+  const n=pgParcelasTemp.length+1;
+  const last=pgParcelasTemp[pgParcelasTemp.length-1];
+  const baseDate=last?new Date(last.data+'T00:00:00'):new Date();
+  if(last) baseDate.setDate(baseDate.getDate()+30);
+  pgParcelasTemp.push({numero:n,valor:0,data:baseDate.toISOString().split('T')[0]});
+  renderParcelasTable();
+}
+
+function removerParcela(idx){
+  pgParcelasTemp.splice(idx,1);
+  pgParcelasTemp.forEach((p,i)=>p.numero=i+1);
+  renderParcelasTable();
+}
+
+function atualizarParcela(idx,campo,valor){
+  if(campo==='valor') pgParcelasTemp[idx].valor=parseFloat(valor)||0;
+  else if(campo==='data') pgParcelasTemp[idx].data=valor;
+  renderParcelasTable();
+}
+
+function renderParcelasTable(){
+  const tbody=document.getElementById('pg-parcelas-tbody');
+  if(!pgParcelasTemp.length){
+    tbody.innerHTML='<tr><td colspan="4" style="text-align:center;color:var(--muted);padding:16px">Nenhuma parcela definida</td></tr>';
+  } else {
+    tbody.innerHTML=pgParcelasTemp.map((p,idx)=>`
+      <tr>
+        <td>${p.numero}ª</td>
+        <td><input type="number" min="0" step="0.01" class="orc-mini-input" value="${p.valor}" oninput="atualizarParcela(${idx},'valor',this.value)"></td>
+        <td><input type="date" class="orc-mini-input" value="${p.data}" onchange="atualizarParcela(${idx},'data',this.value)"></td>
+        <td><button class="btn-danger-sm" onclick="removerParcela(${idx})">🗑</button></td>
+      </tr>`).join('');
+  }
+  const totalParcelas=pgParcelasTemp.reduce((s,p)=>s+p.valor,0);
+  document.getElementById('pg-total-parcelas').textContent=fmt(totalParcelas);
+  const totalOrc=orcamentoTotalAtual();
+  document.getElementById('pg-diferenca-aviso').style.display=Math.abs(totalParcelas-totalOrc)>0.01?'block':'none';
+}
+
+function salvarPagamento(){
+  const tipo=document.getElementById('pg-tipo').value;
+  if(tipo==='parcelado'&&!pgParcelasTemp.length){showToast('Adicione ao menos uma parcela','error');return;}
+  orcPagamentoTemp={
+    tipo,
+    intervalo:parseInt(document.getElementById('pg-intervalo').value)||30,
+    parcelas:tipo==='parcelado'?pgParcelasTemp:[]
+  };
+  atualizarResumoPagamento();
+  fecharModal('modal-pagamento');
+  showToast('Forma de pagamento definida!');
+}
+
+function atualizarResumoPagamento(){
+  const el=document.getElementById('orc-pagamento-resumo');
+  if(!el) return;
+  if(!orcPagamentoTemp||orcPagamentoTemp.tipo!=='parcelado'||!orcPagamentoTemp.parcelas.length){
+    el.textContent='💳 À vista (padrão, sem parcelamento)';
+  } else {
+    const n=orcPagamentoTemp.parcelas.length;
+    const primeira=orcPagamentoTemp.parcelas[0];
+    el.textContent=`💳 ${n}x — 1ª parcela: ${fmt(primeira.valor)} em ${fmtDate(primeira.data)}`;
+  }
+}
+
+function salvarOrcamento(){
+  const clienteId=parseInt(document.getElementById('orc-cliente').value);
+  const data=document.getElementById('orc-data').value;
+  const validadeDias=parseInt(document.getElementById('orc-validade').value)||15;
+  let status=document.getElementById('orc-status').value||'enviado';
+  const condPagamento=document.getElementById('orc-cond').value.trim();
+  const prazoEntrega=document.getElementById('orc-prazo').value.trim();
+  const obs=document.getElementById('orc-obs').value.trim();
+  const desconto=parseFloat(document.getElementById('orc-desconto').value)||0;
+  if(!clienteId||!data){showToast('Selecione o cliente e a data','error');return;}
+  if(!orcItensTemp.length){showToast('Adicione ao menos um item ao orçamento','error');return;}
+  if(orcItensTemp.some(it=>!it.motorId||!it.qty||it.valorUnit<0)){showToast('Verifique os itens: quantidade e valor são obrigatórios','error');return;}
+
+  const orcamentos=DB.get('orcamentos');
+  const existingId=parseInt(document.getElementById('orc-id').value);
+  const anterior=existingId?orcamentos.find(o=>o.id===existingId):null;
+  const jaGerouVenda=!!(anterior&&anterior.vendaIds&&anterior.vendaIds.length);
+
+  // Se está sendo aprovado agora (e ainda não gerou venda), valida estoque.
+  // Se faltar estoque, o orçamento AINDA É SALVO — apenas volta para o status anterior (sem gerar venda).
+  let avisoEstoque=null;
+  if(status==='aprovado'&&!jaGerouVenda){
+    const erro=validarEstoqueParaAprovacao(orcItensTemp);
+    if(erro){
+      avisoEstoque=erro;
+      status=anterior?(anterior.status||'enviado'):'enviado';
+    }
+  }
+
+  let orcId;
+  if(existingId){
+    const idx=orcamentos.findIndex(o=>o.id===existingId);
+    orcamentos[idx]={...orcamentos[idx],clienteId,data,validadeDias,status,condPagamento,prazoEntrega,obs,desconto,itens:orcItensTemp,pagamento:orcPagamentoTemp};
+    orcId=existingId;
+  } else {
+    const id=nextId('orcamentoNextId');
+    orcamentos.push({id,numero:'ORC-'+String(id).padStart(4,'0'),clienteId,data,validadeDias,status,condPagamento,prazoEntrega,obs,desconto,itens:orcItensTemp,pagamento:orcPagamentoTemp,vendaIds:[]});
+    orcId=id;
+  }
+  DB.set('orcamentos',orcamentos);
+
+  if(avisoEstoque){
+    showToast('Orçamento salvo, porém não foi possível aprovar: '+avisoEstoque,'error');
+  } else if(status==='aprovado'&&!jaGerouVenda){
+    gerarVendaDeOrcamento(orcId);
+  } else if(status!=='aprovado'&&jaGerouVenda){
+    showToast('Status atualizado. Este orçamento já possui venda(s) gerada(s) — reverta manualmente em Vendas se necessário.','warning');
+  } else {
+    showToast(existingId?'Orçamento atualizado!':'Orçamento criado!');
+  }
+
+  fecharModal('modal-orcamento');
+  renderPage(currentPage);
+}
+
+// ── Aprovação de orçamento → geração automática de venda ──
+function validarEstoqueParaAprovacao(itens){
+  for(const it of itens){
+    const disponivel=estoqueAtualMotor(it.motorId);
+    if(it.qty>disponivel){
+      const m=getMotorById(it.motorId);
+      return `estoque insuficiente de ${m?motorLabel(m):'motor'} (disponível: ${disponivel} un., necessário: ${it.qty} un.)`;
+    }
+  }
+  return null;
+}
+
+function gerarVendaDeOrcamento(orcId){
+  const orc=DB.get('orcamentos').find(o=>o.id===orcId);
+  if(!orc) return;
+  const cliente=DB.get('clientes').find(c=>c.id===orc.clienteId);
+  const vendas=DB.get('vendas');
+  const novosIds=[];
+  orc.itens.forEach(it=>{
+    const id=nextId('vendaNextId');
+    vendas.push({
+      id,motorId:it.motorId,qty:it.qty,valorVenda:it.valorUnit,
+      precoMedio:precoMedioMotor(it.motorId),
+      data:new Date().toISOString().split('T')[0],
+      cliente:cliente?cliente.nome:'',tipo:'venda',origemOrcamento:orc.numero
+    });
+    novosIds.push(id);
+  });
+  DB.set('vendas',vendas);
+  const orcamentos=DB.get('orcamentos');
+  const idx=orcamentos.findIndex(o=>o.id===orcId);
+  if(idx>-1){orcamentos[idx].vendaIds=novosIds;DB.set('orcamentos',orcamentos);}
+  showToast(`✅ Orçamento ${orc.numero} aprovado! ${novosIds.length} venda(s) gerada(s) e estoque atualizado.`);
+}
+
+function mudarStatusOrcamento(id,novoStatus){
+  const orcamentos=DB.get('orcamentos');
+  const idx=orcamentos.findIndex(o=>o.id===id);
+  if(idx===-1) return;
+  const orc=orcamentos[idx];
+  const statusAnterior=orc.status||'enviado';
+  if(novoStatus===statusAnterior) return;
+
+  if(novoStatus==='aprovado'){
+    const jaGerouVenda=orc.vendaIds&&orc.vendaIds.length;
+    if(!jaGerouVenda){
+      const erro=validarEstoqueParaAprovacao(orc.itens);
+      if(erro){
+        showToast('Não é possível aprovar: '+erro,'error');
+        renderOrcamentos();
+        return;
+      }
+    }
+    orc.status='aprovado';
+    DB.set('orcamentos',orcamentos);
+    if(!jaGerouVenda) gerarVendaDeOrcamento(id); else { renderOrcamentos(); showToast('Status atualizado para Aprovado.'); }
+    return;
+  }
+
+  orc.status=novoStatus;
+  DB.set('orcamentos',orcamentos);
+  if(orc.vendaIds&&orc.vendaIds.length){
+    showToast('Status atualizado. Este orçamento já possui venda(s) gerada(s) — reverta manualmente em Vendas se necessário.','warning');
+  } else {
+    showToast('Status atualizado!');
+  }
+  renderOrcamentos();
+}
+
+function deletarOrcamento(id){
+  confirmar('Remover Orçamento','Tem certeza que deseja remover este orçamento?',()=>{
+    DB.set('orcamentos',DB.get('orcamentos').filter(o=>o.id!==id));
+    renderOrcamentos();showToast('Orçamento removido','warning');
+  });
+}
+
+function renderOrcamentos(){
+  const orcamentos=DB.get('orcamentos').slice().reverse();
+  const el=document.getElementById('tabela-orcamentos');
+  if(!orcamentos.length){el.innerHTML='<div class="empty-state"><div class="empty-icon">📄</div>Nenhum orçamento criado.<br>Clique em <strong>+ Novo Orçamento</strong>.</div>';return;}
+  el.innerHTML=`<table><thead><tr><th>Número</th><th>Cliente</th><th>Data</th><th>Status</th><th>Pagamento</th><th>Valor Total</th><th>Ações</th></tr></thead><tbody>
+    ${orcamentos.map(o=>{
+      const cliente=DB.get('clientes').find(c=>c.id===o.clienteId);
+      const subtotal=o.itens.reduce((s,it)=>s+it.qty*it.valorUnit,0);
+      const total=Math.max(0,subtotal-(o.desconto||0));
+      const pg=o.pagamento;
+      const pgLabel=(pg&&pg.tipo==='parcelado'&&pg.parcelas.length)?`<span class="badge blue">${pg.parcelas.length}x</span>`:`<span class="badge green">À vista</span>`;
+      const status=o.status||'enviado';
+      const corStatus=status==='aprovado'?'var(--green)':status==='reprovado'?'var(--red)':'var(--blue)';
+      return `<tr>
+        <td><strong>${o.numero}</strong></td>
+        <td>${cliente?cliente.nome:'<span style="color:var(--muted)">Cliente removido</span>'}</td>
+        <td>${fmtDate(o.data)}</td>
+        <td>
+          <select onchange="mudarStatusOrcamento(${o.id},this.value)" style="background:var(--surface2);border:1px solid var(--border);color:${corStatus};font-weight:700;border-radius:6px;padding:5px 8px;font-size:12px;cursor:pointer">
+            <option value="enviado" ${status==='enviado'?'selected':''}>📨 Enviado</option>
+            <option value="aprovado" ${status==='aprovado'?'selected':''}>✅ Aprovado</option>
+            <option value="reprovado" ${status==='reprovado'?'selected':''}>❌ Reprovado</option>
+          </select>
+          ${o.vendaIds&&o.vendaIds.length?`<div style="font-size:10px;color:var(--muted);margin-top:3px">Venda gerada</div>`:''}
+        </td>
+        <td>${pgLabel}</td>
+        <td><strong>${fmt(total)}</strong></td>
+        <td><div class="td-actions">
+          <button class="btn-blue" style="padding:5px 10px;font-size:12px;border-radius:6px" onclick="gerarPDFOrcamento(${o.id})">📄 PDF</button>
+          <button class="btn-edit-sm" onclick="abrirModalOrcamento(${o.id})">✏️</button>
+          <button class="btn-danger-sm" onclick="deletarOrcamento(${o.id})">🗑</button>
+        </div></td>
+      </tr>`;
+    }).join('')}
+  </tbody></table>`;
+}
+
+// Desenha a marca MEGA (mesmo desenho usado no login/sidebar) em vetor, direto no PDF
+function desenharLogoMega(doc,x,y,scale){
+  const map=(px,py)=>[x+px*scale,y+py*scale];
+  doc.setFillColor(25,25,25);
+  const tris=[
+    [[150,10],[120,75],[180,75]],
+    [[150,160],[120,95],[180,95]],
+    [[20,85],[95,60],[95,110]],
+    [[280,85],[205,60],[205,110]],
+  ];
+  tris.forEach(t=>{
+    const [x1,y1]=map(t[0][0],t[0][1]);
+    const [x2,y2]=map(t[1][0],t[1][1]);
+    const [x3,y3]=map(t[2][0],t[2][1]);
+    doc.triangle(x1,y1,x2,y2,x3,y3,'F');
+  });
+  doc.setFillColor(212,0,0);
+  const [cx,cy]=map(150,85);
+  doc.ellipse(cx,cy,90*scale,38*scale,'F');
+  doc.setFillColor(255,255,255);
+  const [rx0,ry0]=map(90,66);
+  doc.roundedRect(rx0,ry0,120*scale,38*scale,1.5*scale,1.5*scale,'F');
+  doc.setTextColor(25,25,25);
+  doc.setFont('helvetica','bold');
+  doc.setFontSize(Math.max(6,26*scale*2.834));
+  const [tx,ty]=map(150,93);
+  doc.text('MEGA',tx,ty,{align:'center'});
+}
+
+function gerarPDFOrcamento(id){
+  const orc=DB.get('orcamentos').find(o=>o.id===id);
+  if(!orc){showToast('Orçamento não encontrado','error');return;}
+  if(!window.jspdf){showToast('Biblioteca de PDF não carregou. Verifique sua conexão.','error');return;}
+  const cliente=DB.get('clientes').find(c=>c.id===orc.clienteId);
+  const empresa=DB.getObj('empresa',{nome:'MEGA'});
+  const { jsPDF }=window.jspdf;
+  const doc=new jsPDF();
+  const pageW=doc.internal.pageSize.getWidth();
+
+  // ── Cabeçalho tipo timbrado: logo + dados da empresa à esquerda, título à direita ──
+  desenharLogoMega(doc,14,6,0.095);
+  doc.setTextColor(25,25,25);
+  doc.setFont('helvetica','bold');
+  doc.setFontSize(15);
+  doc.text(empresa.nome||'MEGA',43,13);
+  doc.setFont('helvetica','normal');
+  doc.setFontSize(8.5);
+  doc.setTextColor(90,90,90);
+  const linha1=[empresa.cnpj?'CNPJ: '+empresa.cnpj:'',empresa.telefone||''].filter(Boolean).join('   |   ');
+  if(linha1) doc.text(linha1,43,18.5);
+  const cidadeUfEmp=[empresa.cidade,empresa.uf].filter(Boolean).join('/');
+  const linha2=[empresa.endereco,cidadeUfEmp].filter(Boolean).join(' — ');
+  if(linha2) doc.text(linha2,43,23);
+
+  doc.setTextColor(212,0,0);
+  doc.setFont('helvetica','bold');
+  doc.setFontSize(16);
+  doc.text('ORÇAMENTO',pageW-14,13,{align:'right'});
+  doc.setTextColor(30,30,30);
+  doc.setFont('helvetica','normal');
+  doc.setFontSize(10);
+  doc.text(`Nº ${orc.numero}`,pageW-14,19,{align:'right'});
+  doc.text(`Data: ${fmtDate(orc.data)}`,pageW-14,24.5,{align:'right'});
+
+  const statusLabels={enviado:'📨 Enviado ao Cliente',aprovado:'✅ Aprovado',reprovado:'❌ Reprovado'};
+  const statusCores={enviado:[59,130,246],aprovado:[34,197,94],reprovado:[212,0,0]};
+  const statusAtual=orc.status||'enviado';
+  doc.setFont('helvetica','bold');
+  doc.setFontSize(9);
+  const [sr,sg,sb]=statusCores[statusAtual]||statusCores.enviado;
+  doc.setTextColor(sr,sg,sb);
+  doc.text(statusLabels[statusAtual]||statusLabels.enviado,pageW-14,29.5,{align:'right'});
+
+  doc.setDrawColor(212,0,0);
+  doc.setLineWidth(0.8);
+  doc.line(14,33,pageW-14,33);
+
+  doc.setTextColor(30,30,30);
+  let y=42;
+
+  // Bloco cliente
+  doc.setFontSize(9);
+  doc.setFont('helvetica','bold');
+  doc.text('CLIENTE',14,y); y+=5;
+  doc.setFont('helvetica','normal');
+  doc.text(`${cliente?.nome||'—'}${cliente?.cnpj?'   —   CNPJ/CPF: '+cliente.cnpj:''}`,14,y); y+=5;
+  if(cliente?.endereco){doc.text(cliente.endereco,14,y);y+=5;}
+  const clCidadeUf=[cliente?.cidade,cliente?.uf].filter(Boolean).join('/');
+  if(clCidadeUf||cliente?.cep){doc.text([clCidadeUf,cliente?.cep].filter(Boolean).join(' — '),14,y);y+=5;}
+  const clContato=[cliente?.telefone,cliente?.email].filter(Boolean).join('   |   ');
+  if(clContato){doc.text(clContato,14,y);y+=5;}
+
+  y+=4;
+
+  // Tabela de itens
+  const rows=orc.itens.map(it=>{
+    const m=getMotorById(it.motorId);
+    return [m?motorLabel(m):'—',String(it.qty),fmt(it.valorUnit),fmt(it.qty*it.valorUnit)];
+  });
+  doc.autoTable({
+    startY:y,
+    head:[['Item','Qtd','Valor Unit.','Subtotal']],
+    body:rows,
+    theme:'grid',
+    headStyles:{fillColor:[212,0,0],textColor:255,fontStyle:'bold'},
+    styles:{fontSize:9,textColor:[30,30,30]},
+    columnStyles:{1:{halign:'center',cellWidth:20},2:{halign:'right',cellWidth:32},3:{halign:'right',cellWidth:32}},
+    margin:{left:14,right:14}
+  });
+
+  let finalY=doc.lastAutoTable.finalY+8;
+  const subtotal=orc.itens.reduce((s,it)=>s+it.qty*it.valorUnit,0);
+  const desconto=orc.desconto||0;
+  const total=Math.max(0,subtotal-desconto);
+
+  doc.setFontSize(10);
+  doc.setFont('helvetica','normal');
+  doc.text(`Subtotal: ${fmt(subtotal)}`,pageW-14,finalY,{align:'right'}); finalY+=6;
+  if(desconto>0){doc.text(`Desconto: -${fmt(desconto)}`,pageW-14,finalY,{align:'right'}); finalY+=6;}
+  doc.setFont('helvetica','bold');
+  doc.setFontSize(13);
+  doc.setTextColor(212,0,0);
+  doc.text(`TOTAL: ${fmt(total)}`,pageW-14,finalY,{align:'right'}); finalY+=10;
+
+  doc.setTextColor(30,30,30);
+  doc.setFont('helvetica','normal');
+  doc.setFontSize(9);
+  if(orc.condPagamento){doc.text(`Condições de pagamento: ${orc.condPagamento}`,14,finalY); finalY+=6;}
+  if(orc.prazoEntrega){doc.text(`Prazo de entrega: ${orc.prazoEntrega}`,14,finalY); finalY+=6;}
+  doc.text(`Validade da proposta: ${orc.validadeDias||15} dias a partir da emissão`,14,finalY); finalY+=7;
+
+  // Forma de pagamento / parcelamento
+  const pg=orc.pagamento;
+  if(pg&&pg.tipo==='parcelado'&&pg.parcelas.length){
+    doc.setFont('helvetica','bold');
+    doc.text('Parcelamento:',14,finalY); finalY+=2;
+    const parcelaRows=pg.parcelas.map(p=>[`${p.numero}ª parcela`,fmtDate(p.data),fmt(p.valor)]);
+    doc.autoTable({
+      startY:finalY+2,
+      head:[['Parcela','Vencimento','Valor']],
+      body:parcelaRows,
+      theme:'grid',
+      headStyles:{fillColor:[60,60,60],textColor:255,fontStyle:'bold'},
+      styles:{fontSize:8.5,textColor:[30,30,30]},
+      columnStyles:{2:{halign:'right'}},
+      margin:{left:14,right:14},
+      tableWidth:100
+    });
+    finalY=doc.lastAutoTable.finalY+6;
+  } else {
+    doc.setFont('helvetica','bold');
+    doc.text('Forma de pagamento: à vista',14,finalY); finalY+=6;
+  }
+
+  if(orc.obs){
+    finalY+=2;
+    doc.setFont('helvetica','bold');
+    doc.setFontSize(9);
+    doc.text('Observações:',14,finalY); finalY+=5;
+    doc.setFont('helvetica','normal');
+    const split=doc.splitTextToSize(orc.obs,pageW-28);
+    doc.text(split,14,finalY); finalY+=split.length*5;
+  }
+
+  doc.setFontSize(8);
+  doc.setTextColor(150,150,150);
+  doc.text(`Documento gerado em ${new Date().toLocaleDateString('pt-BR')} — ${empresa.nome||'MEGA'}`,14,290);
+
+  doc.save(`${orc.numero}_${(cliente?.nome||'cliente').replace(/[^\w]+/g,'_')}.pdf`);
+  showToast('PDF do orçamento gerado!');
+}
+
+// ══════════════════════════════════════════════════════════
+//  DASHBOARD
+// ══════════════════════════════════════════════════════════
+let chartMensal=null;
+function renderDashboard(){
+  document.getElementById('dash-filters').innerHTML=buildFiltersHTML('dashboard');
+  let compras=filterByMotor(filterByDate(DB.get('compras'),'data'));
+  let vendas=filterByMotor(filterByDate(DB.get('vendas'),'data'));
+
+  const totalEntradas=compras.reduce((s,c)=>s+c.valor*c.qty,0);
+  const totalSaidas=vendas.reduce((s,v)=>s+v.valorVenda*v.qty,0);
+  const custoSaidas=vendas.reduce((s,v)=>s+v.precoMedio*v.qty,0);
+  const saldoCusto=totalEntradas-custoSaidas;
+  const lucroTotal=totalSaidas-custoSaidas;
+  const qtyEst=compras.reduce((s,c)=>s+c.qty,0)-vendas.reduce((s,v)=>s+v.qty,0);
+
+  document.getElementById('dash-cards').innerHTML=`
+    <div class="stat-card c-red"><div class="lbl">Saldo em Estoque (custo)</div><div class="val">${fmt(saldoCusto)}</div><div class="sub">${qtyEst} unidades disponíveis</div><div class="ci">📦</div></div>
+    <div class="stat-card c-green"><div class="lbl">Total de Entradas</div><div class="val">${fmt(totalEntradas)}</div><div class="sub">${compras.reduce((s,c)=>s+c.qty,0)} unidades compradas</div><div class="ci">📥</div></div>
+    <div class="stat-card c-dark"><div class="lbl">Total de Saídas (venda)</div><div class="val">${fmt(totalSaidas)}</div><div class="sub">${vendas.reduce((s,v)=>s+v.qty,0)} unidades vendidas</div><div class="ci">📤</div></div>
+    <div class="stat-card c-gold"><div class="lbl">Lucro Bruto</div><div class="val" style="color:${lucroTotal>=0?'var(--green)':'var(--accent)'}">${fmt(lucroTotal)}</div><div class="sub">Receita − Custo das vendas</div><div class="ci">💰</div></div>`;
+
+  renderChartMensal(compras,vendas);
+  renderRankCV(vendas);
+}
+
+function chartColors(){
+  const light=document.documentElement.getAttribute('data-theme')==='light';
+  return light?{tick:'#555',grid:'#e2e2e6',legend:'#333'}:{tick:'#666',grid:'#252525',legend:'#aaa'};
+}
+function renderChartMensal(compras,vendas){
+  const meses=['Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez'];
+  const ano=activeFilters.ano||new Date().getFullYear();
+  const qtdC=Array(12).fill(0),qtdV=Array(12).fill(0);
+  compras.forEach(c=>{const d=new Date(c.data);if(!activeFilters.ano||String(d.getFullYear())===String(ano))qtdC[d.getMonth()]+=c.qty;});
+  vendas.forEach(v=>{const d=new Date(v.data);if(!activeFilters.ano||String(d.getFullYear())===String(ano))qtdV[d.getMonth()]+=v.qty;});
+  const ctx=document.getElementById('chartMensal').getContext('2d');
+  const cc=chartColors();
+  if(chartMensal) chartMensal.destroy();
+  chartMensal=new Chart(ctx,{
+    type:'bar',
+    data:{labels:meses,datasets:[
+      {label:'Comprados',data:qtdC,backgroundColor:'#D4000055',borderColor:'#D40000',borderWidth:2,borderRadius:5},
+      {label:'Vendidos',data:qtdV,backgroundColor:'#22c55e44',borderColor:'#22c55e',borderWidth:2,borderRadius:5},
+    ]},
+    options:{responsive:true,maintainAspectRatio:false,
+      plugins:{legend:{labels:{color:cc.legend,font:{size:12}}},tooltip:{callbacks:{label:c=>` ${c.parsed.y} unidades`}}},
+      scales:{x:{ticks:{color:cc.tick},grid:{color:cc.grid}},y:{ticks:{color:cc.tick,stepSize:1},grid:{color:cc.grid},beginAtZero:true}}}
+  });
+}
+
+function renderRankCV(vendas){
+  const motores=DB.get('motores');
+  const cvMap={};
+  vendas.forEach(v=>{const m=motores.find(x=>x.id===v.motorId);if(!m)return;const k=`${m.cv} CV`;cvMap[k]=(cvMap[k]||0)+v.qty;});
+  const sorted=Object.entries(cvMap).sort((a,b)=>b[1]-a[1]).slice(0,8);
+  const max=sorted[0]?.[1]||1;
+  const el=document.getElementById('rankCV');
+  if(!sorted.length){el.innerHTML='<div class="empty-state" style="padding:20px"><div class="empty-icon">📊</div>Sem vendas registradas</div>';return;}
+  el.innerHTML=sorted.map(([label,qty],i)=>`
+    <div class="rank-item">
+      <div class="rank-num ${i===0?'gold':i===1?'silver':i===2?'bronze':''}">${i+1}</div>
+      <div class="rank-bar-wrap">
+        <div class="rank-label">${label}</div>
+        <div class="rank-bar"><div class="rank-bar-fill" style="width:${Math.round(qty/max*100)}%"></div></div>
+      </div>
+      <div class="rank-qty">${qty} un.</div>
+    </div>`).join('');
+}
+</script>
+</body>
+</html>
