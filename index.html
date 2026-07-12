@@ -965,6 +965,29 @@ function seedUsuariosPadrao(){
   DB.setObj('usuarioNextId',3);
 }
 
+// Corrige contas criadas ANTES de uma tela nova existir (ex: Cobrança), que ficaram
+// com a lista de permissões "congelada" sem a página nova.
+function migrarPermissoesUsuarios(){
+  const usuarios=DB.get('usuarios');
+  if(!usuarios||!usuarios.length) return;
+  const todasChaves=PAGINAS_APP.map(p=>p.key);
+  let mudou=false;
+  usuarios.forEach(u=>{
+    if(!Array.isArray(u.permissoes)) u.permissoes=[];
+    // Quem administra usuários (tem acesso à própria tela de Usuários) é tratado como
+    // administrador geral e sempre ganha acesso a todas as telas, inclusive futuras.
+    if(u.permissoes.includes('usuarios')){
+      if(todasChaves.some(k=>!u.permissoes.includes(k))){ u.permissoes=todasChaves.slice(); mudou=true; }
+    }
+    // As duas contas padrão do sistema (admin/vendas) sempre recebem a tela de Cobrança,
+    // pois ela faz parte do fluxo padrão de aprovação de orçamento.
+    if((u.usuario==='admin'||u.usuario==='vendas')&&!u.permissoes.includes('cobranca')){
+      u.permissoes.push('cobranca'); mudou=true;
+    }
+  });
+  if(mudou) DB.set('usuarios',usuarios);
+}
+
 function usuarioPodeAcessar(pagina){
   if(!usuarioLogado) return false;
   if(!usuarioLogado.permissoes||!usuarioLogado.permissoes.length) return true; // fallback de segurança contra dado corrompido
@@ -991,6 +1014,7 @@ window.onload=async()=>{
   await carregarDoSupabase();
   initClean();
   seedUsuariosPadrao();
+  migrarPermissoesUsuarios();
   if(loginBtn){loginBtn.disabled=false;loginBtn.textContent='ENTRAR';}
 
   const saved=DB.getObj('savedLogin',null);
