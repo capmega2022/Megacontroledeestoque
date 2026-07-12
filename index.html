@@ -109,6 +109,9 @@
   .btn-revert-sm{padding:5px 10px;border-radius:6px;background:#f59e0b18;color:var(--yellow);
     border:1px solid #f59e0b30;font-size:12px;cursor:pointer;transition:all .2s;font-weight:600;}
   .btn-revert-sm:hover{background:var(--yellow);color:#111;}
+  .btn-green-sm{padding:5px 10px;border-radius:6px;background:#22c55e18;color:var(--green);
+    border:1px solid #22c55e30;font-size:12px;cursor:pointer;transition:all .2s;font-weight:600;}
+  .btn-green-sm:hover{background:var(--green);color:#fff;}
 
   /* FILTERS */
   .filters-bar{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);
@@ -348,6 +351,7 @@
     <div class="nav-section" style="margin-top:14px">Comercial</div>
     <button class="nav-link" id="nav-clientes"  onclick="showPage('clientes')"><span class="nav-icon">👥</span><span>Clientes</span></button>
     <button class="nav-link" id="nav-orcamento" onclick="showPage('orcamento')"><span class="nav-icon">📄</span><span>Orçamentos</span></button>
+    <button class="nav-link" id="nav-cobranca"  onclick="showPage('cobranca')"><span class="nav-icon">💰</span><span>Cobrança</span></button>
     <button class="nav-link" id="nav-empresa"   onclick="showPage('empresa')"><span class="nav-icon">🏢</span><span>Minha Empresa</span></button>
     <button class="nav-link" id="nav-usuarios"  onclick="showPage('usuarios')"><span class="nav-icon">🔐</span><span>Usuários</span></button>
     <div class="sidebar-spacer"></div>
@@ -477,6 +481,25 @@
       <div class="table-card">
         <div class="table-header"><h3>Orçamentos Emitidos</h3></div>
         <div id="tabela-orcamentos"></div>
+      </div>
+    </div>
+
+    <!-- COBRANÇA -->
+    <div id="page-cobranca" class="page" style="display:none">
+      <div class="page-header">
+        <div class="page-header-left"><h1>Cobrança</h1><p>Orçamentos aprovados aguardando ou com pagamento recebido</p></div>
+        <div class="filter-group"><label>Situação</label>
+          <select id="cobranca-filtro" onchange="renderCobranca()">
+            <option value="aguardando">🕒 Aguardando Cobrança</option>
+            <option value="concluido">✅ Concluídas</option>
+            <option value="todas">Todas</option>
+          </select>
+        </div>
+      </div>
+      <div class="cards-row" id="cobranca-cards"></div>
+      <div class="table-card">
+        <div class="table-header"><h3>Orçamentos Aprovados</h3></div>
+        <div id="tabela-cobranca"></div>
       </div>
     </div>
 
@@ -714,13 +737,15 @@
   </div>
 </div>
 
-<!-- Modal Forma de Pagamento -->
+<!-- Modal Forma de Pagamento / Cobrança -->
 <div id="modal-pagamento" class="modal-overlay" style="display:none;z-index:1100" onclick="fecharModalSe(event,'modal-pagamento')">
   <div class="modal-box wide">
     <div class="modal-header">
-      <h2>💳 Forma de Pagamento</h2>
+      <h2 id="modal-pagamento-titulo">💳 Forma de Pagamento</h2>
       <button class="modal-close" onclick="fecharModal('modal-pagamento')">✕</button>
     </div>
+    <input type="hidden" id="pg-modo" value="edicao">
+    <input type="hidden" id="pg-orc-id" value="">
     <div class="form-grid">
       <div class="field"><label>Tipo de Pagamento</label>
         <select id="pg-tipo" onchange="mudarTipoPagamento()">
@@ -766,7 +791,8 @@
 
     <div class="modal-footer">
       <button class="btn btn-ghost" onclick="fecharModal('modal-pagamento')">Cancelar</button>
-      <button class="btn btn-red" onclick="salvarPagamento()">💾 Salvar Forma de Pagamento</button>
+      <button class="btn btn-red" id="pg-btn-salvar" onclick="salvarPagamento()">💾 Salvar Forma de Pagamento</button>
+      <button class="btn btn-green" id="pg-btn-confirmar-cobranca" style="display:none" onclick="confirmarPagamentoCobranca()">✅ Confirmar Pagamento e Concluir</button>
     </div>
   </div>
 </div>
@@ -919,11 +945,12 @@ const PAGINAS_APP=[
   {key:'analise',    label:'📈 Análise de Estoque'},
   {key:'clientes',   label:'👥 Clientes'},
   {key:'orcamento',  label:'📄 Orçamentos'},
+  {key:'cobranca',   label:'💰 Cobrança'},
   {key:'empresa',    label:'🏢 Minha Empresa'},
   {key:'usuarios',   label:'🔐 Usuários'},
 ];
 const PERMISSOES_ADMIN=PAGINAS_APP.map(p=>p.key);
-const PERMISSOES_VENDAS=['dashboard','venda','estoque','clientes','orcamento'];
+const PERMISSOES_VENDAS=['dashboard','venda','estoque','clientes','orcamento','cobranca'];
 
 let usuarioLogado=null;
 
@@ -1032,8 +1059,8 @@ function showPage(name){
 }
 function renderPage(name){
   ({dashboard:renderDashboard,cadastro:renderCadastro,compra:renderCompra,venda:renderVenda,estoque:renderEstoque,
-    analise:renderAnaliseEstoque,clientes:renderClientes,orcamento:renderOrcamentos,empresa:renderEmpresa,
-    usuarios:renderUsuarios})[name]?.();
+    analise:renderAnaliseEstoque,clientes:renderClientes,orcamento:renderOrcamentos,cobranca:renderCobranca,
+    empresa:renderEmpresa,usuarios:renderUsuarios})[name]?.();
 }
 
 // ══════════════════════════════════════════════════════════
@@ -1914,10 +1941,17 @@ function orcamentoTotalAtual(){
 
 // ── Forma de Pagamento / Parcelamento ──
 let pgParcelasTemp=[];
+let pgTotalAtual=0; // total usado pelo modal de pagamento (funciona tanto no modo edição quanto cobrança)
 
 function abrirModalPagamento(){
-  const total=orcamentoTotalAtual();
-  document.getElementById('pg-total-orc').textContent=fmt(total);
+  document.getElementById('pg-modo').value='edicao';
+  document.getElementById('pg-orc-id').value='';
+  document.getElementById('modal-pagamento-titulo').textContent='💳 Forma de Pagamento';
+  document.getElementById('pg-btn-salvar').style.display='';
+  document.getElementById('pg-btn-confirmar-cobranca').style.display='none';
+
+  pgTotalAtual=orcamentoTotalAtual();
+  document.getElementById('pg-total-orc').textContent=fmt(pgTotalAtual);
   document.getElementById('pg-tipo').value=orcPagamentoTemp.tipo||'vista';
   pgParcelasTemp=orcPagamentoTemp.parcelas&&orcPagamentoTemp.parcelas.length?JSON.parse(JSON.stringify(orcPagamentoTemp.parcelas)):[];
   document.getElementById('pg-num-parcelas').value=pgParcelasTemp.length||2;
@@ -1940,7 +1974,7 @@ function mudarTipoPagamento(){
 }
 
 function gerarParcelasAuto(){
-  const total=orcamentoTotalAtual();
+  const total=pgTotalAtual;
   const n=Math.max(1,parseInt(document.getElementById('pg-num-parcelas').value)||1);
   const dataIni=document.getElementById('pg-data-primeira').value||new Date().toISOString().split('T')[0];
   const intervalo=Math.max(1,parseInt(document.getElementById('pg-intervalo').value)||30);
@@ -1996,8 +2030,7 @@ function renderParcelasTable(){
   }
   const totalParcelas=pgParcelasTemp.reduce((s,p)=>s+p.valor,0);
   document.getElementById('pg-total-parcelas').textContent=fmt(totalParcelas);
-  const totalOrc=orcamentoTotalAtual();
-  document.getElementById('pg-diferenca-aviso').style.display=Math.abs(totalParcelas-totalOrc)>0.01?'block':'none';
+  document.getElementById('pg-diferenca-aviso').style.display=Math.abs(totalParcelas-pgTotalAtual)>0.01?'block':'none';
 }
 
 function salvarPagamento(){
@@ -2023,6 +2056,123 @@ function atualizarResumoPagamento(){
     const primeira=orcPagamentoTemp.parcelas[0];
     el.textContent=`💳 ${n}x — 1ª parcela: ${fmt(primeira.valor)} em ${fmtDate(primeira.data)}`;
   }
+}
+
+// ══════════════════════════════════════════════════════════
+//  COBRANÇA
+// ══════════════════════════════════════════════════════════
+function calcularTotalOrcamento(o){
+  const subtotal=o.itens.reduce((s,it)=>s+it.qty*it.valorUnit,0);
+  return Math.max(0,subtotal-(o.desconto||0));
+}
+
+function abrirCobranca(orcId){
+  const orc=DB.get('orcamentos').find(o=>o.id===orcId);
+  if(!orc) return;
+  const cliente=DB.get('clientes').find(c=>c.id===orc.clienteId);
+
+  document.getElementById('pg-modo').value='cobranca';
+  document.getElementById('pg-orc-id').value=orc.id;
+  document.getElementById('modal-pagamento-titulo').textContent=`💳 Cobrança — ${orc.numero}${cliente?' · '+cliente.nome:''}`;
+  document.getElementById('pg-btn-salvar').style.display='none';
+  document.getElementById('pg-btn-confirmar-cobranca').style.display='';
+
+  pgTotalAtual=calcularTotalOrcamento(orc);
+  document.getElementById('pg-total-orc').textContent=fmt(pgTotalAtual);
+
+  const pagamento=orc.pagamento||{tipo:'vista',parcelas:[],intervalo:30};
+  document.getElementById('pg-tipo').value=pagamento.tipo||'vista';
+  pgParcelasTemp=pagamento.parcelas&&pagamento.parcelas.length?JSON.parse(JSON.stringify(pagamento.parcelas)):[];
+  document.getElementById('pg-num-parcelas').value=pgParcelasTemp.length||2;
+  document.getElementById('pg-data-primeira').value=pgParcelasTemp[0]?.data||orc.data;
+  document.getElementById('pg-intervalo').value=pagamento.intervalo||30;
+  mudarTipoPagamento();
+  if(document.getElementById('pg-tipo').value==='parcelado'){
+    if(!pgParcelasTemp.length) gerarParcelasAuto(); else renderParcelasTable();
+  } else {
+    renderParcelasTable();
+  }
+  abrirModal('modal-pagamento');
+}
+
+function confirmarPagamentoCobranca(){
+  const orcId=parseInt(document.getElementById('pg-orc-id').value);
+  const orcamentos=DB.get('orcamentos');
+  const idx=orcamentos.findIndex(o=>o.id===orcId);
+  if(idx===-1){showToast('Orçamento não encontrado','error');return;}
+  const tipo=document.getElementById('pg-tipo').value;
+  if(tipo==='parcelado'&&!pgParcelasTemp.length){showToast('Adicione ao menos uma parcela','error');return;}
+
+  orcamentos[idx].pagamento={
+    tipo,
+    intervalo:parseInt(document.getElementById('pg-intervalo').value)||30,
+    parcelas:tipo==='parcelado'?pgParcelasTemp:[]
+  };
+  orcamentos[idx].statusCobranca='concluido';
+  orcamentos[idx].dataPagamento=new Date().toISOString().split('T')[0];
+  DB.set('orcamentos',orcamentos);
+  fecharModal('modal-pagamento');
+  showToast(`✅ Pagamento do ${orcamentos[idx].numero} confirmado!`);
+  renderCobranca();
+}
+
+function reabrirCobranca(id){
+  confirmar('Reabrir Cobrança','Tem certeza que deseja marcar este orçamento novamente como aguardando cobrança?',()=>{
+    const orcamentos=DB.get('orcamentos');
+    const idx=orcamentos.findIndex(o=>o.id===id);
+    if(idx>-1){
+      orcamentos[idx].statusCobranca='aguardando';
+      DB.set('orcamentos',orcamentos);
+      renderCobranca();
+      showToast('Cobrança reaberta','warning');
+    }
+  });
+}
+
+function renderCobranca(){
+  const filtro=document.getElementById('cobranca-filtro')?.value||'aguardando';
+  const todosAprovados=DB.get('orcamentos').filter(o=>o.status==='aprovado');
+  const aguardandoList=todosAprovados.filter(o=>(o.statusCobranca||'aguardando')==='aguardando');
+  const concluidoList=todosAprovados.filter(o=>o.statusCobranca==='concluido');
+
+  let orcamentos=todosAprovados;
+  if(filtro==='aguardando') orcamentos=aguardandoList;
+  else if(filtro==='concluido') orcamentos=concluidoList;
+  orcamentos=orcamentos.slice().reverse();
+
+  const totalAguardando=aguardandoList.reduce((s,o)=>s+calcularTotalOrcamento(o),0);
+  const totalConcluido=concluidoList.reduce((s,o)=>s+calcularTotalOrcamento(o),0);
+
+  document.getElementById('cobranca-cards').innerHTML=`
+    <div class="stat-card c-gold"><div class="lbl">Aguardando Cobrança</div><div class="val">${fmt(totalAguardando)}</div><div class="sub">${aguardandoList.length} orçamento(s)</div><div class="ci">🕒</div></div>
+    <div class="stat-card c-green"><div class="lbl">Recebido (Concluído)</div><div class="val">${fmt(totalConcluido)}</div><div class="sub">${concluidoList.length} orçamento(s)</div><div class="ci">✅</div></div>`;
+
+  const el=document.getElementById('tabela-cobranca');
+  if(!orcamentos.length){el.innerHTML='<div class="empty-state"><div class="empty-icon">💰</div>Nenhum orçamento nesta situação.</div>';return;}
+  el.innerHTML=`<table><thead><tr><th>Número</th><th>Cliente</th><th>Data Aprovação</th><th>Pagamento</th><th>Valor Total</th><th>Situação</th><th>Ações</th></tr></thead><tbody>
+    ${orcamentos.map(o=>{
+      const cliente=DB.get('clientes').find(c=>c.id===o.clienteId);
+      const total=calcularTotalOrcamento(o);
+      const pg=o.pagamento;
+      const pgLabel=(pg&&pg.tipo==='parcelado'&&pg.parcelas.length)?`<span class="badge blue">${pg.parcelas.length}x</span>`:`<span class="badge green">À vista</span>`;
+      const statusCobr=o.statusCobranca||'aguardando';
+      const statusBadge=statusCobr==='concluido'?`<span class="badge green">✅ Concluído</span>`:`<span class="badge yellow">🕒 Aguardando</span>`;
+      return `<tr>
+        <td><strong>${o.numero}</strong></td>
+        <td>${cliente?cliente.nome:'<span style="color:var(--muted)">Cliente removido</span>'}</td>
+        <td>${o.dataAprovacao?fmtDate(o.dataAprovacao):'—'}</td>
+        <td>${pgLabel}</td>
+        <td><strong>${fmt(total)}</strong></td>
+        <td>${statusBadge}</td>
+        <td><div class="td-actions">
+          <button class="btn-blue" style="padding:5px 10px;font-size:12px;border-radius:6px" onclick="gerarPDFOrcamento(${o.id})">📄 PDF</button>
+          ${statusCobr==='aguardando'
+            ?`<button class="btn-green-sm" onclick="abrirCobranca(${o.id})">💳 Pago</button>`
+            :`<button class="btn-revert-sm" onclick="reabrirCobranca(${o.id})">↩️ Reabrir</button>`}
+        </div></td>
+      </tr>`;
+    }).join('')}
+  </tbody></table>`;
 }
 
 function salvarOrcamento(){
@@ -2070,6 +2220,15 @@ function salvarOrcamento(){
     showToast('Orçamento salvo, porém não foi possível aprovar: '+avisoEstoque,'error');
   } else if(status==='aprovado'&&!jaGerouVenda){
     gerarVendaDeOrcamento(orcId);
+  } else if(status==='aprovado'&&jaGerouVenda){
+    const orcamentosAtual=DB.get('orcamentos');
+    const idx2=orcamentosAtual.findIndex(o=>o.id===orcId);
+    if(idx2>-1){
+      if(!orcamentosAtual[idx2].statusCobranca) orcamentosAtual[idx2].statusCobranca='aguardando';
+      if(!orcamentosAtual[idx2].dataAprovacao) orcamentosAtual[idx2].dataAprovacao=new Date().toISOString().split('T')[0];
+      DB.set('orcamentos',orcamentosAtual);
+    }
+    showToast('Orçamento atualizado!');
   } else if(status!=='aprovado'&&jaGerouVenda){
     showToast('Status atualizado. Este orçamento já possui venda(s) gerada(s) — reverta manualmente em Vendas se necessário.','warning');
   } else {
@@ -2111,8 +2270,13 @@ function gerarVendaDeOrcamento(orcId){
   DB.set('vendas',vendas);
   const orcamentos=DB.get('orcamentos');
   const idx=orcamentos.findIndex(o=>o.id===orcId);
-  if(idx>-1){orcamentos[idx].vendaIds=novosIds;DB.set('orcamentos',orcamentos);}
-  showToast(`✅ Orçamento ${orc.numero} aprovado! ${novosIds.length} venda(s) gerada(s) e estoque atualizado.`);
+  if(idx>-1){
+    orcamentos[idx].vendaIds=novosIds;
+    orcamentos[idx].dataAprovacao=new Date().toISOString().split('T')[0];
+    orcamentos[idx].statusCobranca='aguardando';
+    DB.set('orcamentos',orcamentos);
+  }
+  showToast(`✅ Orçamento ${orc.numero} aprovado! ${novosIds.length} venda(s) gerada(s) e estoque atualizado. Encaminhado para Cobrança.`);
 }
 
 function mudarStatusOrcamento(id,novoStatus){
@@ -2134,8 +2298,16 @@ function mudarStatusOrcamento(id,novoStatus){
       }
     }
     orc.status='aprovado';
-    DB.set('orcamentos',orcamentos);
-    if(!jaGerouVenda) gerarVendaDeOrcamento(id); else { renderOrcamentos(); showToast('Status atualizado para Aprovado.'); }
+    if(!jaGerouVenda){
+      DB.set('orcamentos',orcamentos);
+      gerarVendaDeOrcamento(id);
+    } else {
+      if(!orc.statusCobranca) orc.statusCobranca='aguardando';
+      if(!orc.dataAprovacao) orc.dataAprovacao=new Date().toISOString().split('T')[0];
+      DB.set('orcamentos',orcamentos);
+      renderOrcamentos();
+      showToast('Status atualizado para Aprovado.');
+    }
     return;
   }
 
@@ -2257,21 +2429,12 @@ function gerarPDFOrcamento(id){
   doc.text(`Nº ${orc.numero}`,pageW-14,19,{align:'right'});
   doc.text(`Data: ${fmtDate(orc.data)}`,pageW-14,24.5,{align:'right'});
 
-  const statusLabels={enviado:'📨 Enviado ao Cliente',aprovado:'✅ Aprovado',reprovado:'❌ Reprovado'};
-  const statusCores={enviado:[59,130,246],aprovado:[34,197,94],reprovado:[212,0,0]};
-  const statusAtual=orc.status||'enviado';
-  doc.setFont('helvetica','bold');
-  doc.setFontSize(9);
-  const [sr,sg,sb]=statusCores[statusAtual]||statusCores.enviado;
-  doc.setTextColor(sr,sg,sb);
-  doc.text(statusLabels[statusAtual]||statusLabels.enviado,pageW-14,29.5,{align:'right'});
-
   doc.setDrawColor(212,0,0);
   doc.setLineWidth(0.8);
-  doc.line(14,33,pageW-14,33);
+  doc.line(14,29,pageW-14,29);
 
   doc.setTextColor(30,30,30);
-  let y=42;
+  let y=38;
 
   // Bloco cliente
   doc.setFontSize(9);
