@@ -131,6 +131,7 @@
   .stat-card.c-green::before{background:var(--green);}
   .stat-card.c-dark::before{background:#444;}
   .stat-card.c-gold::before{background:var(--yellow);}
+  .stat-card.c-blue::before{background:var(--blue);}
   .stat-card .lbl{font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.8px;margin-bottom:8px;font-weight:700;}
   .stat-card .val{font-size:24px;font-weight:800;letter-spacing:-1px;}
   .stat-card .sub{font-size:12px;color:var(--muted);margin-top:4px;}
@@ -491,6 +492,7 @@
         <div class="filter-group"><label>Situação</label>
           <select id="cobranca-filtro" onchange="renderCobranca()">
             <option value="aguardando">🕒 Aguardando Cobrança</option>
+            <option value="parcial">🟠 Pagamento Parcial</option>
             <option value="concluido">✅ Concluídas</option>
             <option value="todas">Todas</option>
           </select>
@@ -771,19 +773,20 @@
     </div>
 
     <div id="pg-parcelado-area" style="display:none">
-      <div style="margin-top:16px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px">
+      <div id="pg-parcelas-actions" style="margin-top:16px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px">
         <label style="font-size:11px;color:var(--muted);font-weight:700;text-transform:uppercase;letter-spacing:.8px">Parcelas</label>
         <div style="display:flex;gap:8px">
           <button class="btn btn-ghost" style="padding:6px 12px;font-size:12px" onclick="gerarParcelasAuto()">🔄 Gerar Automático</button>
           <button class="btn btn-blue" style="padding:6px 12px;font-size:12px" onclick="adicionarParcelaManual()">✚ Parcela Manual</button>
         </div>
       </div>
-      <p style="font-size:12px;color:var(--muted);margin-top:6px">O valor e a data de cada parcela podem ser editados manualmente após gerar automaticamente.</p>
+      <p id="pg-parcelas-dica" style="font-size:12px;color:var(--muted);margin-top:6px">O valor e a data de cada parcela podem ser editados manualmente após gerar automaticamente.</p>
       <div class="itens-table-wrap">
-        <table><thead><tr><th style="width:60px">Parcela</th><th>Valor (R$)</th><th>Vencimento</th><th></th></tr></thead>
+        <table><thead id="pg-parcelas-thead"><tr><th style="width:60px">Parcela</th><th>Valor (R$)</th><th>Vencimento</th><th></th></tr></thead>
         <tbody id="pg-parcelas-tbody"></tbody></table>
       </div>
       <div class="orc-totais" style="margin-top:10px">
+        <div id="pg-progresso-cobranca" style="display:none;color:var(--blue);font-weight:600"></div>
         <div>Total das Parcelas: <strong id="pg-total-parcelas" style="color:var(--text)">R$ 0,00</strong></div>
         <div id="pg-diferenca-aviso" style="color:var(--accent);font-size:12px;display:none">⚠️ A soma das parcelas está diferente do total do orçamento</div>
       </div>
@@ -1973,6 +1976,8 @@ function abrirModalPagamento(){
   document.getElementById('modal-pagamento-titulo').textContent='💳 Forma de Pagamento';
   document.getElementById('pg-btn-salvar').style.display='';
   document.getElementById('pg-btn-confirmar-cobranca').style.display='none';
+  document.getElementById('pg-parcelas-actions').style.display='flex';
+  document.getElementById('pg-parcelas-dica').textContent='O valor e a data de cada parcela podem ser editados manualmente após gerar automaticamente.';
 
   pgTotalAtual=orcamentoTotalAtual();
   document.getElementById('pg-total-orc').textContent=fmt(pgTotalAtual);
@@ -1995,6 +2000,15 @@ function mudarTipoPagamento(){
   document.getElementById('pg-intervalo-wrap').style.display=parcelado?'flex':'none';
   document.getElementById('pg-parcelado-area').style.display=parcelado?'block':'none';
   if(parcelado&&!pgParcelasTemp.length) gerarParcelasAuto();
+  const modo=document.getElementById('pg-modo').value;
+  if(modo==='cobranca'){
+    const btn=document.getElementById('pg-btn-confirmar-cobranca');
+    if(btn) btn.textContent=parcelado?'✅ Marcar Todas as Parcelas como Pagas':'✅ Confirmar Pagamento e Concluir';
+    const acoes=document.getElementById('pg-parcelas-actions');
+    const dica=document.getElementById('pg-parcelas-dica');
+    if(acoes) acoes.style.display='none'; // não recalcular/gerar automático durante a cobrança (evita apagar pagamentos já registrados)
+    if(dica) dica.textContent='Marque cada parcela como paga individualmente, conforme o cliente for pagando.';
+  }
 }
 
 function gerarParcelasAuto(){
@@ -2012,7 +2026,7 @@ function gerarParcelasAuto(){
     else soma+=valorParcela;
     const d=new Date(dIni);
     d.setDate(d.getDate()+intervalo*i);
-    parcelas.push({numero:i+1,valor,data:d.toISOString().split('T')[0]});
+    parcelas.push({numero:i+1,valor,data:d.toISOString().split('T')[0],pago:false});
   }
   pgParcelasTemp=parcelas;
   renderParcelasTable();
@@ -2023,7 +2037,7 @@ function adicionarParcelaManual(){
   const last=pgParcelasTemp[pgParcelasTemp.length-1];
   const baseDate=last?new Date(last.data+'T00:00:00'):new Date();
   if(last) baseDate.setDate(baseDate.getDate()+30);
-  pgParcelasTemp.push({numero:n,valor:0,data:baseDate.toISOString().split('T')[0]});
+  pgParcelasTemp.push({numero:n,valor:0,data:baseDate.toISOString().split('T')[0],pago:false});
   renderParcelasTable();
 }
 
@@ -2041,8 +2055,32 @@ function atualizarParcela(idx,campo,valor){
 
 function renderParcelasTable(){
   const tbody=document.getElementById('pg-parcelas-tbody');
+  const thead=document.getElementById('pg-parcelas-thead');
+  const modo=document.getElementById('pg-modo').value;
+  const emCobranca=modo==='cobranca';
+
+  thead.innerHTML=emCobranca
+    ?'<tr><th style="width:50px">Parcela</th><th>Valor (R$)</th><th>Vencimento</th><th>Situação</th><th></th></tr>'
+    :'<tr><th style="width:60px">Parcela</th><th>Valor (R$)</th><th>Vencimento</th><th></th></tr>';
+
   if(!pgParcelasTemp.length){
-    tbody.innerHTML='<tr><td colspan="4" style="text-align:center;color:var(--muted);padding:16px">Nenhuma parcela definida</td></tr>';
+    tbody.innerHTML=`<tr><td colspan="${emCobranca?5:4}" style="text-align:center;color:var(--muted);padding:16px">Nenhuma parcela definida</td></tr>`;
+  } else if(emCobranca){
+    tbody.innerHTML=pgParcelasTemp.map((p,idx)=>p.pago?`
+      <tr style="opacity:.7">
+        <td>${p.numero}ª</td>
+        <td>${fmt(p.valor)}</td>
+        <td>${fmtDate(p.data)}</td>
+        <td><span class="badge green">✅ Paga em ${fmtDate(p.dataPagamento)}</span></td>
+        <td><button class="btn-revert-sm" onclick="desmarcarParcelaPaga(${idx})" title="Desfazer pagamento">↩️</button></td>
+      </tr>`:`
+      <tr>
+        <td>${p.numero}ª</td>
+        <td><input type="number" min="0" step="0.01" class="orc-mini-input" value="${p.valor}" oninput="atualizarParcela(${idx},'valor',this.value)"></td>
+        <td><input type="date" class="orc-mini-input" value="${p.data}" onchange="atualizarParcela(${idx},'data',this.value)"></td>
+        <td><span class="badge yellow">🕒 Pendente</span></td>
+        <td><button class="btn-green-sm" onclick="marcarParcelaPaga(${idx})">✅ Pagar</button></td>
+      </tr>`).join('');
   } else {
     tbody.innerHTML=pgParcelasTemp.map((p,idx)=>`
       <tr>
@@ -2052,9 +2090,20 @@ function renderParcelasTable(){
         <td><button class="btn-danger-sm" onclick="removerParcela(${idx})">🗑</button></td>
       </tr>`).join('');
   }
+
   const totalParcelas=pgParcelasTemp.reduce((s,p)=>s+p.valor,0);
   document.getElementById('pg-total-parcelas').textContent=fmt(totalParcelas);
   document.getElementById('pg-diferenca-aviso').style.display=Math.abs(totalParcelas-pgTotalAtual)>0.01?'block':'none';
+
+  const elProg=document.getElementById('pg-progresso-cobranca');
+  if(emCobranca&&pgParcelasTemp.length){
+    const pagas=pgParcelasTemp.filter(p=>p.pago).length;
+    const valorPago=pgParcelasTemp.filter(p=>p.pago).reduce((s,p)=>s+p.valor,0);
+    elProg.style.display='block';
+    elProg.textContent=`💰 ${pagas} de ${pgParcelasTemp.length} parcela(s) paga(s) — recebido: ${fmt(valorPago)}`;
+  } else if(elProg){
+    elProg.style.display='none';
+  }
 }
 
 function salvarPagamento(){
@@ -2106,7 +2155,9 @@ function abrirCobranca(orcId){
 
   const pagamento=orc.pagamento||{tipo:'vista',parcelas:[],intervalo:30};
   document.getElementById('pg-tipo').value=pagamento.tipo||'vista';
-  pgParcelasTemp=pagamento.parcelas&&pagamento.parcelas.length?JSON.parse(JSON.stringify(pagamento.parcelas)):[];
+  pgParcelasTemp=pagamento.parcelas&&pagamento.parcelas.length
+    ?JSON.parse(JSON.stringify(pagamento.parcelas)).map(p=>({...p,pago:!!p.pago}))
+    :[];
   document.getElementById('pg-num-parcelas').value=pgParcelasTemp.length||2;
   document.getElementById('pg-data-primeira').value=pgParcelasTemp[0]?.data||orc.data;
   document.getElementById('pg-intervalo').value=pagamento.intervalo||30;
@@ -2119,33 +2170,92 @@ function abrirCobranca(orcId){
   abrirModal('modal-pagamento');
 }
 
-function confirmarPagamentoCobranca(){
-  const orcId=parseInt(document.getElementById('pg-orc-id').value);
+// Persiste o progresso de pagamento no orçamento (recalcula aguardando/parcial/concluído automaticamente)
+function salvarProgressoCobranca(orcId,forcarConcluido){
   const orcamentos=DB.get('orcamentos');
   const idx=orcamentos.findIndex(o=>o.id===orcId);
-  if(idx===-1){showToast('Orçamento não encontrado','error');return;}
+  if(idx===-1) return null;
   const tipo=document.getElementById('pg-tipo').value;
-  if(tipo==='parcelado'&&!pgParcelasTemp.length){showToast('Adicione ao menos uma parcela','error');return;}
-
   orcamentos[idx].pagamento={
     tipo,
     intervalo:parseInt(document.getElementById('pg-intervalo').value)||30,
     parcelas:tipo==='parcelado'?pgParcelasTemp:[]
   };
-  orcamentos[idx].statusCobranca='concluido';
-  orcamentos[idx].dataPagamento=new Date().toISOString().split('T')[0];
+  if(tipo==='parcelado'&&pgParcelasTemp.length){
+    const todasPagas=pgParcelasTemp.every(p=>p.pago);
+    const algumaPaga=pgParcelasTemp.some(p=>p.pago);
+    orcamentos[idx].statusCobranca=todasPagas?'concluido':(algumaPaga?'parcial':'aguardando');
+    if(todasPagas) orcamentos[idx].dataPagamento=new Date().toISOString().split('T')[0];
+    else delete orcamentos[idx].dataPagamento;
+  } else if(forcarConcluido){
+    orcamentos[idx].statusCobranca='concluido';
+    orcamentos[idx].dataPagamento=new Date().toISOString().split('T')[0];
+  }
   DB.set('orcamentos',orcamentos);
+  return orcamentos[idx];
+}
+
+// Marca UMA parcela específica como paga, sem afetar as demais
+function marcarParcelaPaga(idx){
+  if(!pgParcelasTemp[idx]||pgParcelasTemp[idx].pago) return;
+  pgParcelasTemp[idx].pago=true;
+  pgParcelasTemp[idx].dataPagamento=new Date().toISOString().split('T')[0];
+  const orcId=parseInt(document.getElementById('pg-orc-id').value);
+  const orcAtualizado=salvarProgressoCobranca(orcId,false);
+  renderParcelasTable();
+  const filtroEl=document.getElementById('cobranca-filtro');
+  if(filtroEl) filtroEl.value='todas';
+  renderCobranca();
+  if(orcAtualizado&&orcAtualizado.statusCobranca==='concluido'){
+    showToast(`✅ Todas as parcelas do ${orcAtualizado.numero} foram pagas! Cobrança concluída.`);
+    fecharModal('modal-pagamento');
+  } else {
+    showToast(`Parcela ${pgParcelasTemp[idx].numero}ª marcada como paga.`);
+  }
+}
+
+// Desfaz o pagamento de uma parcela específica (caso marcada por engano)
+function desmarcarParcelaPaga(idx){
+  if(!pgParcelasTemp[idx]) return;
+  pgParcelasTemp[idx].pago=false;
+  delete pgParcelasTemp[idx].dataPagamento;
+  const orcId=parseInt(document.getElementById('pg-orc-id').value);
+  salvarProgressoCobranca(orcId,false);
+  renderParcelasTable();
+  renderCobranca();
+  showToast('Pagamento da parcela revertido.','warning');
+}
+
+function confirmarPagamentoCobranca(){
+  const orcId=parseInt(document.getElementById('pg-orc-id').value);
+  const tipo=document.getElementById('pg-tipo').value;
+  if(tipo==='parcelado'&&!pgParcelasTemp.length){showToast('Adicione ao menos uma parcela','error');return;}
+  if(tipo==='parcelado'){
+    const hoje=new Date().toISOString().split('T')[0];
+    pgParcelasTemp.forEach(p=>{ if(!p.pago){ p.pago=true; p.dataPagamento=hoje; } });
+  }
+  const orcAtualizado=salvarProgressoCobranca(orcId,tipo!=='parcelado');
+  if(!orcAtualizado){showToast('Orçamento não encontrado','error');return;}
   fecharModal('modal-pagamento');
-  showToast(`✅ Pagamento do ${orcamentos[idx].numero} confirmado!`);
+  const filtroEl=document.getElementById('cobranca-filtro');
+  if(filtroEl) filtroEl.value='todas';
+  showToast(`✅ Pagamento do ${orcAtualizado.numero} confirmado!`);
   renderCobranca();
 }
 
 function reabrirCobranca(id){
-  confirmar('Reabrir Cobrança','Tem certeza que deseja marcar este orçamento novamente como aguardando cobrança?',()=>{
+  confirmar('Reabrir Cobrança','Tem certeza que deseja reabrir a cobrança deste orçamento?',()=>{
     const orcamentos=DB.get('orcamentos');
     const idx=orcamentos.findIndex(o=>o.id===id);
     if(idx>-1){
-      orcamentos[idx].statusCobranca='aguardando';
+      const orc=orcamentos[idx];
+      if(orc.pagamento&&orc.pagamento.tipo==='parcelado'&&orc.pagamento.parcelas.length){
+        const algumaPaga=orc.pagamento.parcelas.some(p=>p.pago);
+        orc.statusCobranca=algumaPaga?'parcial':'aguardando';
+      } else {
+        orc.statusCobranca='aguardando';
+      }
+      delete orc.dataPagamento;
       DB.set('orcamentos',orcamentos);
       renderCobranca();
       showToast('Cobrança reaberta','warning');
@@ -2157,18 +2267,22 @@ function renderCobranca(){
   const filtro=document.getElementById('cobranca-filtro')?.value||'aguardando';
   const todosAprovados=DB.get('orcamentos').filter(o=>o.status==='aprovado');
   const aguardandoList=todosAprovados.filter(o=>(o.statusCobranca||'aguardando')==='aguardando');
+  const parcialList=todosAprovados.filter(o=>o.statusCobranca==='parcial');
   const concluidoList=todosAprovados.filter(o=>o.statusCobranca==='concluido');
 
   let orcamentos=todosAprovados;
   if(filtro==='aguardando') orcamentos=aguardandoList;
+  else if(filtro==='parcial') orcamentos=parcialList;
   else if(filtro==='concluido') orcamentos=concluidoList;
   orcamentos=orcamentos.slice().reverse();
 
   const totalAguardando=aguardandoList.reduce((s,o)=>s+calcularTotalOrcamento(o),0);
+  const totalParcial=parcialList.reduce((s,o)=>s+calcularTotalOrcamento(o),0);
   const totalConcluido=concluidoList.reduce((s,o)=>s+calcularTotalOrcamento(o),0);
 
   document.getElementById('cobranca-cards').innerHTML=`
     <div class="stat-card c-gold"><div class="lbl">Aguardando Cobrança</div><div class="val">${fmt(totalAguardando)}</div><div class="sub">${aguardandoList.length} orçamento(s)</div><div class="ci">🕒</div></div>
+    <div class="stat-card c-blue"><div class="lbl">Pagamento Parcial</div><div class="val">${fmt(totalParcial)}</div><div class="sub">${parcialList.length} orçamento(s)</div><div class="ci">🟠</div></div>
     <div class="stat-card c-green"><div class="lbl">Recebido (Concluído)</div><div class="val">${fmt(totalConcluido)}</div><div class="sub">${concluidoList.length} orçamento(s)</div><div class="ci">✅</div></div>`;
 
   const el=document.getElementById('tabela-cobranca');
@@ -2180,7 +2294,13 @@ function renderCobranca(){
       const pg=o.pagamento;
       const pgLabel=(pg&&pg.tipo==='parcelado'&&pg.parcelas.length)?`<span class="badge blue">${pg.parcelas.length}x</span>`:`<span class="badge green">À vista</span>`;
       const statusCobr=o.statusCobranca||'aguardando';
-      const statusBadge=statusCobr==='concluido'?`<span class="badge green">✅ Concluído</span>`:`<span class="badge yellow">🕒 Aguardando</span>`;
+      let statusBadge;
+      if(statusCobr==='concluido') statusBadge=`<span class="badge green">✅ Concluído</span>`;
+      else if(statusCobr==='parcial'){
+        const parcelas=(o.pagamento&&o.pagamento.parcelas)||[];
+        const pagas=parcelas.filter(p=>p.pago).length;
+        statusBadge=`<span class="badge blue">🟠 Parcial (${pagas}/${parcelas.length})</span>`;
+      } else statusBadge=`<span class="badge yellow">🕒 Aguardando</span>`;
       return `<tr>
         <td><strong>${o.numero}</strong></td>
         <td>${cliente?cliente.nome:'<span style="color:var(--muted)">Cliente removido</span>'}</td>
@@ -2190,9 +2310,9 @@ function renderCobranca(){
         <td>${statusBadge}</td>
         <td><div class="td-actions">
           <button class="btn-blue" style="padding:5px 10px;font-size:12px;border-radius:6px" onclick="gerarPDFOrcamento(${o.id})">📄 PDF</button>
-          ${statusCobr==='aguardando'
-            ?`<button class="btn-green-sm" onclick="abrirCobranca(${o.id})">💳 Pago</button>`
-            :`<button class="btn-revert-sm" onclick="reabrirCobranca(${o.id})">↩️ Reabrir</button>`}
+          ${statusCobr==='concluido'
+            ?`<button class="btn-revert-sm" onclick="reabrirCobranca(${o.id})">↩️ Reabrir</button>`
+            :`<button class="btn-green-sm" onclick="abrirCobranca(${o.id})">💳 ${statusCobr==='parcial'?'Continuar':'Pago'}</button>`}
         </div></td>
       </tr>`;
     }).join('')}
