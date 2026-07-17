@@ -565,8 +565,10 @@
         </select>
       </div>
       <div class="field"><label>Modelo / Código</label><input type="text" id="m-modelo" placeholder="ex: W21 IE3"></div>
-      <div class="field"><label>Saldo Inicial</label><input type="number" id="m-saldo-inicial" placeholder="0" step="1" min="0"></div>
+      <div class="field"><label>Saldo Inicial</label><input type="number" id="m-saldo-inicial" placeholder="0" step="1" min="0" oninput="atualizarCustoTotalMotor()"></div>
       <div class="field"><label>Estoque Mínimo</label><input type="number" id="m-estoque-minimo" placeholder="3" step="1" min="0"></div>
+      <div class="field"><label>Custo Médio Unitário (R$)</label><input type="number" id="m-custo-unitario" placeholder="0,00" step="0.01" min="0" oninput="atualizarCustoTotalMotor()"></div>
+      <div class="field"><label>Custo Total (R$)</label><input type="text" id="m-custo-total" placeholder="R$ 0,00" readonly style="opacity:.7;cursor:not-allowed"></div>
       <div class="field full"><label>Descrição (opcional)</label><input type="text" id="m-desc" placeholder="Observações"></div>
     </div>
     <div class="modal-footer">
@@ -1182,10 +1184,14 @@ const motorLabel=m=>`${m.marca} | ${m.cv} CV | ${m.volt}${m.modelo?' | '+m.model
 const getMotorById=id=>DB.get('motores').find(m=>m.id===id);
 function nextId(key){const n=DB.getObj(key,1);DB.setObj(key,n+1);return n;}
 function precoMedioMotor(motorId){
+  const m=getMotorById(motorId);
   const c=DB.get('compras').filter(c=>c.motorId===motorId);
-  if(!c.length) return 0;
-  const tot=c.reduce((s,x)=>s+x.valor*x.qty,0);
-  const qty=c.reduce((s,x)=>s+x.qty,0);
+  let tot=c.reduce((s,x)=>s+x.valor*x.qty,0);
+  let qty=c.reduce((s,x)=>s+x.qty,0);
+  if(m&&m.saldoInicial>0){
+    tot+=m.saldoInicial*(m.custoInicial||0);
+    qty+=m.saldoInicial;
+  }
   return qty?tot/qty:0;
 }
 function estoqueAtualMotor(motorId){
@@ -1217,12 +1223,20 @@ function abrirModalMotor(id){
   document.getElementById('m-modelo').value='';
   document.getElementById('m-saldo-inicial').value='';
   document.getElementById('m-estoque-minimo').value='';
+  document.getElementById('m-custo-unitario').value='';
   document.getElementById('m-desc').value='';
   if(id){
     const m=getMotorById(id);
-    if(m){document.getElementById('m-id').value=m.id;document.getElementById('m-marca').value=m.marca;document.getElementById('m-cv').value=m.cv;document.getElementById('m-volt').value=m.volt;document.getElementById('m-modelo').value=m.modelo||'';document.getElementById('m-saldo-inicial').value=m.saldoInicial||'';document.getElementById('m-estoque-minimo').value=(m.estoqueMinimo!==undefined&&m.estoqueMinimo!==null)?m.estoqueMinimo:'';document.getElementById('m-desc').value=m.desc||'';}
+    if(m){document.getElementById('m-id').value=m.id;document.getElementById('m-marca').value=m.marca;document.getElementById('m-cv').value=m.cv;document.getElementById('m-volt').value=m.volt;document.getElementById('m-modelo').value=m.modelo||'';document.getElementById('m-saldo-inicial').value=m.saldoInicial||'';document.getElementById('m-estoque-minimo').value=(m.estoqueMinimo!==undefined&&m.estoqueMinimo!==null)?m.estoqueMinimo:'';document.getElementById('m-custo-unitario').value=m.custoInicial||'';document.getElementById('m-desc').value=m.desc||'';}
   }
+  atualizarCustoTotalMotor();
   abrirModal('modal-motor');
+}
+
+function atualizarCustoTotalMotor(){
+  const qty=parseFloat(document.getElementById('m-saldo-inicial').value)||0;
+  const custoUnit=parseFloat(document.getElementById('m-custo-unitario').value)||0;
+  document.getElementById('m-custo-total').value=fmt(qty*custoUnit);
 }
 
 function salvarMotor(){
@@ -1234,16 +1248,18 @@ function salvarMotor(){
   const estoqueMinimoRaw=document.getElementById('m-estoque-minimo').value;
   const saldoInicial=saldoInicialRaw===''?0:parseInt(saldoInicialRaw);
   const estoqueMinimo=estoqueMinimoRaw===''?3:parseInt(estoqueMinimoRaw);
+  const custoInicialRaw=document.getElementById('m-custo-unitario').value;
+  const custoInicial=custoInicialRaw===''?0:parseFloat(custoInicialRaw);
   const desc=document.getElementById('m-desc').value.trim();
   if(!marca||!cv||!volt){showToast('Preencha Marca, CV e Voltagem','error');return;}
   const motores=DB.get('motores');
   const existingId=parseInt(document.getElementById('m-id').value);
   if(existingId){
     const idx=motores.findIndex(m=>m.id===existingId);
-    if(idx>-1) motores[idx]={...motores[idx],marca,cv,volt,modelo,saldoInicial,estoqueMinimo,desc};
+    if(idx>-1) motores[idx]={...motores[idx],marca,cv,volt,modelo,saldoInicial,estoqueMinimo,custoInicial,desc};
     showToast('Motor atualizado!');
   } else {
-    motores.push({id:nextId('motorNextId'),marca,cv,volt,modelo,saldoInicial,estoqueMinimo,desc});
+    motores.push({id:nextId('motorNextId'),marca,cv,volt,modelo,saldoInicial,estoqueMinimo,custoInicial,desc});
     showToast('Motor cadastrado!');
   }
   DB.set('motores',motores);
@@ -1321,15 +1337,15 @@ function salvarCompra(){
   renderCompra();
 }
 
-function reverterCompra(id){
+function deletarCompra(id){
   const c=DB.get('compras').find(x=>x.id===id);
   const m=getMotorById(c?.motorId);
-  confirmar('Reverter Compra',`Reverter a compra de ${c?.qty} un. de ${m?.marca||'?'} ${m?.cv||'?'}CV? Isso removerá as unidades do estoque.`,()=>{
+  confirmar('Excluir Compra',`Excluir a compra de ${c?.qty} un. de ${m?.marca||'?'} ${m?.cv||'?'}CV? Isso removerá as unidades do estoque.`,()=>{
     // Verifica se há saldo suficiente
     const estAtual=estoqueAtualMotor(c.motorId);
-    if(estAtual<c.qty){showToast(`Não é possível reverter: saldo insuficiente (${estAtual} un. disponíveis)`,'error');return;}
+    if(estAtual<c.qty){showToast(`Não é possível excluir: saldo insuficiente (${estAtual} un. disponíveis)`,'error');return;}
     DB.set('compras',DB.get('compras').filter(x=>x.id!==id));
-    showToast('Compra revertida','warning');
+    showToast('Compra excluída','warning');
     renderCompra();
   });
 }
@@ -1351,7 +1367,7 @@ function renderCompra(){
         <td>${isAcerto?`<span class="acerto-badge">⚖️ Acerto</span>`:`<span class="badge blue">Compra</span>`}</td>
         <td><div class="td-actions">
           ${!isAcerto?`<button class="btn-edit-sm" onclick="abrirModalCompra(${c.id})">✏️</button>`:''}
-          <button class="btn-revert-sm" onclick="reverterCompra(${c.id})">↩ Reverter</button>
+          <button class="btn-danger-sm" onclick="deletarCompra(${c.id})">🗑 Excluir</button>
         </div></td>
       </tr>`;
     }).join('')}
@@ -1433,12 +1449,12 @@ function salvarVenda(){
   renderVenda();
 }
 
-function reverterVenda(id){
+function deletarVenda(id){
   const v=DB.get('vendas').find(x=>x.id===id);
   const m=getMotorById(v?.motorId);
-  confirmar('Reverter Venda',`Reverter a venda de ${v?.qty} un. de ${m?.marca||'?'} ${m?.cv||'?'}CV? As unidades voltam ao estoque.`,()=>{
+  confirmar('Excluir Venda',`Excluir a venda de ${v?.qty} un. de ${m?.marca||'?'} ${m?.cv||'?'}CV? As unidades voltam ao estoque.`,()=>{
     DB.set('vendas',DB.get('vendas').filter(x=>x.id!==id));
-    showToast('Venda revertida','warning');
+    showToast('Venda excluída','warning');
     renderVenda();
   });
 }
@@ -1465,7 +1481,7 @@ function renderVenda(){
         <td>${tipoBadge}</td>
         <td><div class="td-actions">
           ${!isAcerto?`<button class="btn-edit-sm" onclick="abrirModalVenda(${v.id})">✏️</button>`:''}
-          <button class="btn-revert-sm" onclick="reverterVenda(${v.id})">↩ Reverter</button>
+          <button class="btn-danger-sm" onclick="deletarVenda(${v.id})">🗑 Excluir</button>
         </div></td>
       </tr>`;
     }).join('')}
