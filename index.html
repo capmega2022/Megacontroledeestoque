@@ -565,6 +565,8 @@
         </select>
       </div>
       <div class="field"><label>Modelo / Código</label><input type="text" id="m-modelo" placeholder="ex: W21 IE3"></div>
+      <div class="field"><label>Saldo Inicial</label><input type="number" id="m-saldo-inicial" placeholder="0" step="1" min="0"></div>
+      <div class="field"><label>Estoque Mínimo</label><input type="number" id="m-estoque-minimo" placeholder="3" step="1" min="0"></div>
       <div class="field full"><label>Descrição (opcional)</label><input type="text" id="m-desc" placeholder="Observações"></div>
     </div>
     <div class="modal-footer">
@@ -1187,9 +1189,11 @@ function precoMedioMotor(motorId){
   return qty?tot/qty:0;
 }
 function estoqueAtualMotor(motorId){
+  const m=getMotorById(motorId);
+  const saldoInicial=m?.saldoInicial||0;
   const e=DB.get('compras').filter(c=>c.motorId===motorId).reduce((s,c)=>s+c.qty,0);
   const s=DB.get('vendas').filter(v=>v.motorId===motorId).reduce((s,v)=>s+v.qty,0);
-  return e-s;
+  return saldoInicial+e-s;
 }
 
 function showToast(msg,type='success'){
@@ -1211,10 +1215,12 @@ function abrirModalMotor(id){
   document.getElementById('m-cv').value='';
   document.getElementById('m-volt').value='';
   document.getElementById('m-modelo').value='';
+  document.getElementById('m-saldo-inicial').value='';
+  document.getElementById('m-estoque-minimo').value='';
   document.getElementById('m-desc').value='';
   if(id){
     const m=getMotorById(id);
-    if(m){document.getElementById('m-id').value=m.id;document.getElementById('m-marca').value=m.marca;document.getElementById('m-cv').value=m.cv;document.getElementById('m-volt').value=m.volt;document.getElementById('m-modelo').value=m.modelo||'';document.getElementById('m-desc').value=m.desc||'';}
+    if(m){document.getElementById('m-id').value=m.id;document.getElementById('m-marca').value=m.marca;document.getElementById('m-cv').value=m.cv;document.getElementById('m-volt').value=m.volt;document.getElementById('m-modelo').value=m.modelo||'';document.getElementById('m-saldo-inicial').value=m.saldoInicial||'';document.getElementById('m-estoque-minimo').value=(m.estoqueMinimo!==undefined&&m.estoqueMinimo!==null)?m.estoqueMinimo:'';document.getElementById('m-desc').value=m.desc||'';}
   }
   abrirModal('modal-motor');
 }
@@ -1224,16 +1230,20 @@ function salvarMotor(){
   const cv=parseFloat(document.getElementById('m-cv').value);
   const volt=document.getElementById('m-volt').value;
   const modelo=document.getElementById('m-modelo').value.trim();
+  const saldoInicialRaw=document.getElementById('m-saldo-inicial').value;
+  const estoqueMinimoRaw=document.getElementById('m-estoque-minimo').value;
+  const saldoInicial=saldoInicialRaw===''?0:parseInt(saldoInicialRaw);
+  const estoqueMinimo=estoqueMinimoRaw===''?3:parseInt(estoqueMinimoRaw);
   const desc=document.getElementById('m-desc').value.trim();
   if(!marca||!cv||!volt){showToast('Preencha Marca, CV e Voltagem','error');return;}
   const motores=DB.get('motores');
   const existingId=parseInt(document.getElementById('m-id').value);
   if(existingId){
     const idx=motores.findIndex(m=>m.id===existingId);
-    if(idx>-1) motores[idx]={...motores[idx],marca,cv,volt,modelo,desc};
+    if(idx>-1) motores[idx]={...motores[idx],marca,cv,volt,modelo,saldoInicial,estoqueMinimo,desc};
     showToast('Motor atualizado!');
   } else {
-    motores.push({id:nextId('motorNextId'),marca,cv,volt,modelo,desc});
+    motores.push({id:nextId('motorNextId'),marca,cv,volt,modelo,saldoInicial,estoqueMinimo,desc});
     showToast('Motor cadastrado!');
   }
   DB.set('motores',motores);
@@ -1252,13 +1262,15 @@ function renderCadastro(){
   const motores=DB.get('motores');
   const el=document.getElementById('tabela-motores');
   if(!motores.length){el.innerHTML='<div class="empty-state"><div class="empty-icon">🔧</div>Nenhum motor cadastrado.<br>Clique em <strong>+ Novo Motor</strong> para começar.</div>';return;}
-  el.innerHTML=`<table><thead><tr><th>Marca</th><th>CV</th><th>Voltagem</th><th>Modelo</th><th>Estoque</th><th>Ações</th></tr></thead><tbody>
+  el.innerHTML=`<table><thead><tr><th>Marca</th><th>CV</th><th>Voltagem</th><th>Modelo</th><th>Estoque</th><th>Mínimo</th><th>Ações</th></tr></thead><tbody>
     ${motores.map(m=>{
       const est=estoqueAtualMotor(m.id);
+      const min=m.estoqueMinimo!==undefined&&m.estoqueMinimo!==null?m.estoqueMinimo:3;
       return `<tr>
         <td><strong>${m.marca}</strong></td>
         <td>${m.cv} CV</td><td>${m.volt}</td><td>${m.modelo||'—'}</td>
-        <td><span class="badge ${est<=0?'red':est<=3?'yellow':'green'}">${est} un.</span></td>
+        <td><span class="badge ${est<=0?'red':est<=min?'yellow':'green'}">${est} un.</span></td>
+        <td>${min} un.</td>
         <td><div class="td-actions">
           <button class="btn-edit-sm" onclick="abrirModalMotor(${m.id})">✏️ Editar</button>
           <button class="btn-danger-sm" onclick="deletarMotor(${m.id})">🗑 Remover</button>
@@ -1548,13 +1560,14 @@ function renderEstoque(){
     ${motores.map(m=>{
       const est=estoqueAtualMotor(m.id);
       const pm=precoMedioMotor(m.id);
-      const e=DB.get('compras').filter(c=>c.motorId===m.id).reduce((s,c)=>s+c.qty,0);
+      const min=m.estoqueMinimo!==undefined&&m.estoqueMinimo!==null?m.estoqueMinimo:3;
+      const e=(m.saldoInicial||0)+DB.get('compras').filter(c=>c.motorId===m.id).reduce((s,c)=>s+c.qty,0);
       const s=DB.get('vendas').filter(v=>v.motorId===m.id).reduce((s,v)=>s+v.qty,0);
       return `<tr>
         <td><strong>${m.marca}</strong></td><td>${m.cv} CV</td><td>${m.volt}</td><td>${m.modelo||'—'}</td>
         <td>${e}</td><td>${s}</td><td><strong>${est}</strong></td>
         <td>${fmt(pm)}</td><td>${fmt(pm*est)}</td>
-        <td>${est<=0?'<span class="badge red">Zerado</span>':est<=3?'<span class="badge yellow">Baixo</span>':'<span class="badge green">OK</span>'}</td>
+        <td>${est<=0?'<span class="badge red">Zerado</span>':est<=min?'<span class="badge yellow">Baixo</span>':'<span class="badge green">OK</span>'}</td>
         <td><button class="btn-edit-sm" onclick="abrirModalAcertoMotor(${m.id})">⚖️ Acerto</button></td>
       </tr>`;
     }).join('')}
