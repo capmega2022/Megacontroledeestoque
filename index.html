@@ -363,6 +363,7 @@
     <button class="nav-link" id="nav-compra"    onclick="showPage('compra')"><span class="nav-icon">📥</span><span>Compra</span></button>
     <button class="nav-link" id="nav-venda"     onclick="showPage('venda')"><span class="nav-icon">📤</span><span>Venda</span></button>
     <button class="nav-link" id="nav-estoque"   onclick="showPage('estoque')"><span class="nav-icon">📦</span><span>Estoque</span></button>
+    <button class="nav-link" id="nav-transferencia" onclick="showPage('transferencia')"><span class="nav-icon">🔄</span><span>Transferência de Estoque</span></button>
     <button class="nav-link" id="nav-analise"   onclick="showPage('analise')"><span class="nav-icon">📈</span><span>Análise de Estoque</span></button>
     <div class="nav-section" style="margin-top:14px">Comercial</div>
     <button class="nav-link" id="nav-clientes"  onclick="showPage('clientes')"><span class="nav-icon">👥</span><span>Clientes</span></button>
@@ -460,6 +461,23 @@
       <div class="table-card">
         <div class="table-header"><h3>Saldo em Estoque</h3></div>
         <div id="tabela-estoque"></div>
+      </div>
+    </div>
+
+    <!-- TRANSFERÊNCIA DE ESTOQUE -->
+    <div id="page-transferencia" class="page" style="display:none">
+      <div class="page-header">
+        <div class="page-header-left"><h1>Transferência de Estoque</h1><p>Altere o local onde cada motor está guardado</p></div>
+        <button class="btn btn-red" onclick="abrirModalAddOpcao('local',null)">➕ Novo Local</button>
+      </div>
+      <div class="filters-bar" id="transferencia-filters"></div>
+      <div class="table-card">
+        <div class="table-header"><h3>Motores</h3></div>
+        <div id="tabela-transferencia"></div>
+      </div>
+      <div class="table-card" style="margin-top:18px">
+        <div class="table-header"><h3>Histórico de Transferências</h3></div>
+        <div id="tabela-transferencia-historico"></div>
       </div>
     </div>
 
@@ -631,6 +649,12 @@
         </div>
       </div>
       <div class="field"><label>Modelo / Código</label><input type="text" id="m-modelo" placeholder="ex: W21 IE3"></div>
+      <div class="field"><label>Local de Estoque</label>
+        <div class="select-add-wrap">
+          <select id="m-local" onchange="onChangeOpcaoSelect('m-local','local')"></select>
+          <button type="button" class="select-add-btn" title="Adicionar novo local" onclick="abrirModalAddOpcao('local','m-local')">+</button>
+        </div>
+      </div>
       <div class="field"><label>Saldo Inicial</label><input type="number" id="m-saldo-inicial" placeholder="0" step="1" min="0" oninput="atualizarCustoTotalMotor()"></div>
       <div class="field"><label>Estoque Mínimo</label><input type="number" id="m-estoque-minimo" placeholder="3" step="1" min="0"></div>
       <div class="field"><label>Custo Médio Unitário (R$)</label><input type="number" id="m-custo-unitario" placeholder="0,00" step="0.01" min="0" oninput="atualizarCustoTotalMotor()"></div>
@@ -1021,6 +1045,7 @@ function initClean(){
   DB.set('vendas',[]);   DB.setObj('vendaNextId',1);
   DB.set('clientes',[]); DB.setObj('clienteNextId',1);
   DB.set('orcamentos',[]); DB.setObj('orcamentoNextId',1);
+  DB.set('transferencias',[]); DB.setObj('transferenciaNextId',1);
   DB.setObj('empresa',{nome:'MEGA',cnpj:'',ie:'',endereco:'',cidade:'',uf:'',cep:'',telefone:'',email:'',site:''});
   localStorage.setItem('ms_initialized','1');
 }
@@ -1034,6 +1059,7 @@ const PAGINAS_APP=[
   {key:'compra',     label:'📥 Compra'},
   {key:'venda',      label:'📤 Venda'},
   {key:'estoque',    label:'📦 Estoque'},
+  {key:'transferencia', label:'🔄 Transferência de Estoque'},
   {key:'analise',    label:'📈 Análise de Estoque'},
   {key:'clientes',   label:'👥 Clientes'},
   {key:'orcamento',  label:'📄 Orçamentos'},
@@ -1227,6 +1253,7 @@ function showPage(name){
 }
 function renderPage(name){
   ({dashboard:renderDashboard,cadastro:renderCadastro,compra:renderCompra,venda:renderVenda,estoque:renderEstoque,
+    transferencia:renderTransferencia,
     analise:renderAnaliseEstoque,clientes:renderClientes,orcamento:renderOrcamentos,cobranca:renderCobranca,
     empresa:renderEmpresa,usuarios:renderUsuarios})[name]?.();
 }
@@ -1331,26 +1358,28 @@ const motorLabel=m=>`${m.marca} | ${m.cv} CV${m.polos?' | '+m.polos+'P':''} | ${
 const getMotorById=id=>DB.get('motores').find(m=>m.id===id);
 
 // ══════════════════════════════════════════════════════════
-//  OPÇÕES CADASTRÁVEIS (Voltagem / Polos)
+//  OPÇÕES CADASTRÁVEIS (Voltagem / Polos / Local de Estoque)
 // ══════════════════════════════════════════════════════════
-const VOLTAGENS_PADRAO=['110V','127V','220V','380V','220/380V','440V'];
-const POLOS_PADRAO=[2,4,6,8];
+const OPCOES_CONFIG={
+  volt:{key:'opcoesVoltagem',padrao:['110V','127V','220V','380V','220/380V','440V'],label:'Nova Voltagem',placeholder:'ex: 380/440V',fmt:v=>v},
+  polos:{key:'opcoesPolos',padrao:[2,4,6,8],label:'Novo Nº de Polos',placeholder:'ex: 12',fmt:v=>`${v} polos`},
+  local:{key:'opcoesLocal',padrao:[],label:'Novo Local de Estoque',placeholder:'ex: Depósito 1, Prateleira A2',fmt:v=>v},
+};
 function getOpcoes(tipo){
-  const key=tipo==='polos'?'opcoesPolos':'opcoesVoltagem';
-  const padrao=tipo==='polos'?POLOS_PADRAO:VOLTAGENS_PADRAO;
-  const lista=DB.getObj(key,padrao);
-  return Array.isArray(lista)&&lista.length?lista:padrao.slice();
+  const cfg=OPCOES_CONFIG[tipo];
+  const lista=DB.getObj(cfg.key,cfg.padrao);
+  return Array.isArray(lista)&&lista.length?lista:cfg.padrao.slice();
 }
 function salvarOpcoes(tipo,lista){
-  DB.setObj(tipo==='polos'?'opcoesPolos':'opcoesVoltagem',lista);
+  DB.setObj(OPCOES_CONFIG[tipo].key,lista);
 }
 function preencherSelectOpcoes(selectId,tipo,valorAtual){
+  const cfg=OPCOES_CONFIG[tipo];
   const lista=getOpcoes(tipo);
   const sel=document.getElementById(selectId);
   if(!sel) return;
-  const fmtLabel=v=>tipo==='polos'?`${v} polos`:v;
   sel.innerHTML='<option value="">Selecione</option>'
-    +lista.map(v=>`<option value="${v}" ${(valorAtual!==''&&valorAtual!==null&&valorAtual!==undefined&&String(v)===String(valorAtual))?'selected':''}>${fmtLabel(v)}</option>`).join('')
+    +lista.map(v=>`<option value="${v}" ${(valorAtual!==''&&valorAtual!==null&&valorAtual!==undefined&&String(v)===String(valorAtual))?'selected':''}>${cfg.fmt(v)}</option>`).join('')
     +'<option value="__novo__">➕ Adicionar novo...</option>';
   sel.dataset.prev=(valorAtual!==null&&valorAtual!==undefined)?String(valorAtual):'';
 }
@@ -1365,10 +1394,11 @@ function onChangeOpcaoSelect(selectId,tipo){
   }
 }
 function abrirModalAddOpcao(tipo,selectId){
+  const cfg=OPCOES_CONFIG[tipo];
   document.getElementById('ao-tipo').value=tipo;
   document.getElementById('ao-select-alvo').value=selectId||'';
-  document.getElementById('ao-label').textContent=tipo==='polos'?'Novo Nº de Polos':'Nova Voltagem';
-  document.getElementById('ao-valor').placeholder=tipo==='polos'?'ex: 12':'ex: 380/440V';
+  document.getElementById('ao-label').textContent=cfg.label;
+  document.getElementById('ao-valor').placeholder=cfg.placeholder;
   document.getElementById('ao-valor').value='';
   abrirModal('modal-add-option');
   setTimeout(()=>document.getElementById('ao-valor')?.focus(),80);
@@ -1390,10 +1420,12 @@ function confirmarAdicionarOpcao(){
   } else {
     lista.push(val);
     if(tipo==='polos') lista.sort((a,b)=>a-b);
+    if(tipo==='local') lista.sort((a,b)=>String(a).localeCompare(String(b),'pt-BR'));
     salvarOpcoes(tipo,lista);
     showToast('Opção adicionada!');
   }
   if(selectId) preencherSelectOpcoes(selectId,tipo,val);
+  if(tipo==='local'&&currentPage==='transferencia') renderTransferencia();
   fecharModal('modal-add-option');
 }
 function nextId(key){const n=DB.getObj(key,1);DB.setObj(key,n+1);return n;}
@@ -1438,13 +1470,14 @@ function abrirModalMotor(id){
   document.getElementById('m-estoque-minimo').value='';
   document.getElementById('m-custo-unitario').value='';
   document.getElementById('m-desc').value='';
-  let voltAtual='',polosAtual='';
+  let voltAtual='',polosAtual='',localAtual='';
   if(id){
     const m=getMotorById(id);
-    if(m){document.getElementById('m-id').value=m.id;document.getElementById('m-marca').value=m.marca;document.getElementById('m-cv').value=m.cv;document.getElementById('m-modelo').value=m.modelo||'';document.getElementById('m-saldo-inicial').value=m.saldoInicial||'';document.getElementById('m-estoque-minimo').value=(m.estoqueMinimo!==undefined&&m.estoqueMinimo!==null)?m.estoqueMinimo:'';document.getElementById('m-custo-unitario').value=m.custoInicial||'';document.getElementById('m-desc').value=m.desc||'';voltAtual=m.volt||'';polosAtual=(m.polos!==undefined&&m.polos!==null)?m.polos:'';}
+    if(m){document.getElementById('m-id').value=m.id;document.getElementById('m-marca').value=m.marca;document.getElementById('m-cv').value=m.cv;document.getElementById('m-modelo').value=m.modelo||'';document.getElementById('m-saldo-inicial').value=m.saldoInicial||'';document.getElementById('m-estoque-minimo').value=(m.estoqueMinimo!==undefined&&m.estoqueMinimo!==null)?m.estoqueMinimo:'';document.getElementById('m-custo-unitario').value=m.custoInicial||'';document.getElementById('m-desc').value=m.desc||'';voltAtual=m.volt||'';polosAtual=(m.polos!==undefined&&m.polos!==null)?m.polos:'';localAtual=m.local||'';}
   }
   preencherSelectOpcoes('m-volt','volt',voltAtual);
   preencherSelectOpcoes('m-polos','polos',polosAtual);
+  preencherSelectOpcoes('m-local','local',localAtual);
   atualizarCustoTotalMotor();
   abrirModal('modal-motor');
 }
@@ -1461,6 +1494,7 @@ function salvarMotor(){
   const volt=document.getElementById('m-volt').value;
   const polosRaw=document.getElementById('m-polos').value;
   const polos=polosRaw?parseInt(polosRaw):null;
+  const local=document.getElementById('m-local').value||'';
   const modelo=document.getElementById('m-modelo').value.trim();
   const saldoInicialRaw=document.getElementById('m-saldo-inicial').value;
   const estoqueMinimoRaw=document.getElementById('m-estoque-minimo').value;
@@ -1474,10 +1508,10 @@ function salvarMotor(){
   const existingId=parseInt(document.getElementById('m-id').value);
   if(existingId){
     const idx=motores.findIndex(m=>m.id===existingId);
-    if(idx>-1) motores[idx]={...motores[idx],marca,cv,volt,polos,modelo,saldoInicial,estoqueMinimo,custoInicial,desc};
+    if(idx>-1) motores[idx]={...motores[idx],marca,cv,volt,polos,local,modelo,saldoInicial,estoqueMinimo,custoInicial,desc};
     showToast('Motor atualizado!');
   } else {
-    motores.push({id:nextId('motorNextId'),marca,cv,volt,polos,modelo,saldoInicial,estoqueMinimo,custoInicial,desc});
+    motores.push({id:nextId('motorNextId'),marca,cv,volt,polos,local,modelo,saldoInicial,estoqueMinimo,custoInicial,desc});
     showToast('Motor cadastrado!');
   }
   DB.set('motores',motores);
@@ -1496,13 +1530,13 @@ function renderCadastro(){
   const motores=DB.get('motores');
   const el=document.getElementById('tabela-motores');
   if(!motores.length){el.innerHTML='<div class="empty-state"><div class="empty-icon">🔧</div>Nenhum motor cadastrado.<br>Clique em <strong>+ Novo Motor</strong> para começar.</div>';return;}
-  el.innerHTML=`<table><thead><tr><th>Marca</th><th>CV</th><th>Polos</th><th>Voltagem</th><th>Modelo</th><th>Estoque</th><th>Mínimo</th><th>Ações</th></tr></thead><tbody>
+  el.innerHTML=`<table><thead><tr><th>Marca</th><th>CV</th><th>Polos</th><th>Voltagem</th><th>Modelo</th><th>Local</th><th>Estoque</th><th>Mínimo</th><th>Ações</th></tr></thead><tbody>
     ${motores.map(m=>{
       const est=estoqueAtualMotor(m.id);
       const min=m.estoqueMinimo!==undefined&&m.estoqueMinimo!==null?m.estoqueMinimo:3;
       return `<tr>
         <td><strong>${m.marca}</strong></td>
-        <td>${m.cv} CV</td><td>${m.polos?m.polos+'P':'—'}</td><td>${m.volt}</td><td>${m.modelo||'—'}</td>
+        <td>${m.cv} CV</td><td>${m.polos?m.polos+'P':'—'}</td><td>${m.volt}</td><td>${m.modelo||'—'}</td><td>${m.local||'—'}</td>
         <td><span class="badge ${est<=0?'red':est<=min?'yellow':'green'}">${est} un.</span></td>
         <td>${min} un.</td>
         <td><div class="td-actions">
@@ -1787,7 +1821,7 @@ function renderEstoque(){
   const el=document.getElementById('tabela-estoque');
   if(!motores.length){el.innerHTML='<div class="empty-state"><div class="empty-icon">📦</div>Nenhum motor encontrado com os filtros aplicados.</div>';return;}
   el.innerHTML=`<table><thead><tr>
-    <th>Marca</th><th>CV</th><th>Polos</th><th>Voltagem</th><th>Modelo</th>
+    <th>Marca</th><th>CV</th><th>Polos</th><th>Voltagem</th><th>Modelo</th><th>Local</th>
     <th>Entradas</th><th>Saídas</th><th>Saldo</th>
     <th>Preço Médio</th><th>Valor Total</th><th>Status</th><th>Ações</th>
   </tr></thead><tbody>
@@ -1798,7 +1832,7 @@ function renderEstoque(){
       const e=(m.saldoInicial||0)+DB.get('compras').filter(c=>c.motorId===m.id).reduce((s,c)=>s+c.qty,0);
       const s=DB.get('vendas').filter(v=>v.motorId===m.id).reduce((s,v)=>s+v.qty,0);
       return `<tr>
-        <td><strong>${m.marca}</strong></td><td>${m.cv} CV</td><td>${m.polos?m.polos+'P':'—'}</td><td>${m.volt}</td><td>${m.modelo||'—'}</td>
+        <td><strong>${m.marca}</strong></td><td>${m.cv} CV</td><td>${m.polos?m.polos+'P':'—'}</td><td>${m.volt}</td><td>${m.modelo||'—'}</td><td>${m.local||'—'}</td>
         <td>${e}</td><td>${s}</td><td><strong>${est}</strong></td>
         <td>${fmt(pm)}</td><td>${fmt(pm*est)}</td>
         <td>${est<=0?'<span class="badge red">Zerado</span>':est<=min?'<span class="badge yellow">Baixo</span>':'<span class="badge green">OK</span>'}</td>
@@ -1814,6 +1848,87 @@ function abrirModalAcertoMotor(motorId){
     document.getElementById('a-motor').value=motorId;
     atualizarInfoAcerto();
   },50);
+}
+
+// ══════════════════════════════════════════════════════════
+//  TRANSFERÊNCIA DE ESTOQUE (Local)
+// ══════════════════════════════════════════════════════════
+function renderTransferencia(){
+  document.getElementById('transferencia-filters').innerHTML=buildFiltersHTML('transferencia');
+  const f=activeFilters;
+  let motores=DB.get('motores');
+  if(f.cv) motores=motores.filter(m=>String(m.cv)===String(f.cv));
+  if(f.volt) motores=motores.filter(m=>m.volt===f.volt);
+  if(f.marca) motores=motores.filter(m=>m.marca===f.marca);
+  const locais=getOpcoes('local');
+  const el=document.getElementById('tabela-transferencia');
+  if(!motores.length){
+    el.innerHTML='<div class="empty-state"><div class="empty-icon">🔄</div>Nenhum motor encontrado com os filtros aplicados.</div>';
+  } else {
+    el.innerHTML=`<table><thead><tr>
+      <th>Marca</th><th>CV</th><th>Polos</th><th>Voltagem</th><th>Modelo</th><th>Estoque</th><th>Local Atual</th><th>Transferir Para</th>
+    </tr></thead><tbody>
+      ${motores.map(m=>{
+        const est=estoqueAtualMotor(m.id);
+        return `<tr>
+          <td><strong>${m.marca}</strong></td><td>${m.cv} CV</td><td>${m.polos?m.polos+'P':'—'}</td><td>${m.volt}</td><td>${m.modelo||'—'}</td>
+          <td>${est} un.</td>
+          <td>${m.local?m.local:'<span style="color:var(--muted)">Não definido</span>'}</td>
+          <td>
+            <select onchange="transferirLocal(${m.id},this.value)">
+              <option value="">Selecione o novo local</option>
+              ${locais.map(l=>`<option value="${l}" ${m.local===l?'selected':''}>${l}</option>`).join('')}
+            </select>
+          </td>
+        </tr>`;
+      }).join('')}
+    </tbody></table>`;
+  }
+  renderHistoricoTransferencias();
+}
+
+function transferirLocal(motorId,novoLocal){
+  if(!novoLocal) return;
+  const motores=DB.get('motores');
+  const idx=motores.findIndex(m=>m.id===motorId);
+  if(idx===-1) return;
+  const localAnterior=motores[idx].local||'';
+  if(localAnterior===novoLocal) return;
+  motores[idx]={...motores[idx],local:novoLocal};
+  DB.set('motores',motores);
+
+  const transferencias=DB.get('transferencias');
+  transferencias.push({
+    id:nextId('transferenciaNextId'),
+    motorId,
+    de:localAnterior||'(sem local definido)',
+    para:novoLocal,
+    data:new Date().toISOString(),
+    usuario:usuarioLogado?usuarioLogado.usuario:'—',
+  });
+  DB.set('transferencias',transferencias);
+
+  showToast('Local atualizado!');
+  renderTransferencia();
+}
+
+function renderHistoricoTransferencias(){
+  const el=document.getElementById('tabela-transferencia-historico');
+  if(!el) return;
+  const transferencias=[...DB.get('transferencias')].sort((a,b)=>new Date(b.data)-new Date(a.data)).slice(0,30);
+  if(!transferencias.length){el.innerHTML='<div class="empty-state"><div class="empty-icon">📜</div>Nenhuma transferência registrada ainda.</div>';return;}
+  el.innerHTML=`<table><thead><tr><th>Data</th><th>Motor</th><th>De</th><th>Para</th><th>Usuário</th></tr></thead><tbody>
+    ${transferencias.map(t=>{
+      const m=getMotorById(t.motorId);
+      return `<tr>
+        <td>${new Date(t.data).toLocaleString('pt-BR')}</td>
+        <td>${m?motorLabel(m):'Motor removido'}</td>
+        <td>${t.de}</td>
+        <td><strong>${t.para}</strong></td>
+        <td>${t.usuario||'—'}</td>
+      </tr>`;
+    }).join('')}
+  </tbody></table>`;
 }
 
 // ══════════════════════════════════════════════════════════
