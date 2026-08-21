@@ -57,6 +57,14 @@
   .btn-login{width:100%;padding:13px;border-radius:var(--radius-sm);background:var(--accent);
     color:#fff;font-size:15px;font-weight:700;letter-spacing:.5px;border:none;cursor:pointer;transition:background .2s;}
   .btn-login:hover{background:var(--accent2);}
+  .login-footer-link{display:block;text-align:center;margin-top:18px;font-size:12px;color:var(--muted);
+    background:none;border:none;cursor:pointer;text-decoration:underline;text-underline-offset:2px;}
+  .login-footer-link:hover{color:var(--accent);}
+  .privacy-text h3{font-size:13.5px;margin:18px 0 6px;color:var(--text);}
+  .privacy-text h3:first-child{margin-top:0;}
+  .privacy-text p,.privacy-text li{font-size:13px;color:var(--muted);line-height:1.6;}
+  .privacy-text ul{margin:4px 0 4px 18px;}
+  .privacy-text strong{color:var(--text);}
 
   /* APP */
   #app{display:none;flex-direction:row;min-height:100vh;}
@@ -312,8 +320,8 @@
       </svg>
       <span class="brand-name">Estoque de Motores</span>
     </div>
-    <div class="form-group"><label>Usuário</label>
-      <div class="input-wrap"><input type="text" id="loginUser" placeholder="admin" autocomplete="username"></div></div>
+    <div class="form-group"><label>E-mail</label>
+      <div class="input-wrap"><input type="email" id="loginUser" placeholder="seuemail@empresa.com" autocomplete="username"></div></div>
     <div class="form-group"><label>Senha</label>
       <div class="input-wrap">
         <input type="password" id="loginPass" placeholder="••••••••" autocomplete="current-password">
@@ -322,6 +330,7 @@
     <div class="checkbox-row">
       <input type="checkbox" id="rememberMe"><label for="rememberMe">Lembrar senha</label></div>
     <button class="btn-login" id="loginBtn" onclick="doLogin()">ENTRAR</button>
+    <button type="button" class="login-footer-link" onclick="abrirModalPrivacidade()">Política de Privacidade</button>
   </div>
 </div>
 
@@ -529,7 +538,8 @@
           <div class="field"><label>E-mail</label><input type="email" id="emp-email"></div>
           <div class="field"><label>Site (opcional)</label><input type="text" id="emp-site"></div>
         </div>
-        <div class="modal-footer" style="border-top:1px solid var(--border);margin-top:22px;padding-top:18px;justify-content:flex-end">
+        <div class="modal-footer" style="border-top:1px solid var(--border);margin-top:22px;padding-top:18px;justify-content:space-between">
+          <button class="btn btn-ghost" onclick="abrirModalPrivacidade()">📄 Política de Privacidade</button>
           <button class="btn btn-red" onclick="salvarEmpresa()">💾 Salvar Dados da Empresa</button>
         </div>
       </div>
@@ -551,6 +561,51 @@
 </div>
 
 <!-- ══ MODAIS ══ -->
+
+<!-- Modal Política de Privacidade -->
+<div id="modal-privacidade" class="modal-overlay" style="display:none" onclick="fecharModalSe(event,'modal-privacidade')">
+  <div class="modal-box wide">
+    <div class="modal-header">
+      <h2>Política de Privacidade</h2>
+      <button class="modal-close" onclick="fecharModal('modal-privacidade')">✕</button>
+    </div>
+    <div class="privacy-text">
+      <p style="margin-bottom:14px">Última atualização: <span id="priv-data-atualizacao"></span></p>
+
+      <h3>1. Quem somos</h3>
+      <p><strong id="priv-empresa-nome">MEGA</strong> utiliza este sistema para controle interno de estoque, compras, vendas e orçamentos de motores elétricos. Esta política explica como os dados inseridos no sistema são tratados.</p>
+
+      <h3>2. Quais dados são coletados</h3>
+      <ul>
+        <li>Dados de acesso: e-mail de login (autenticado pelo Supabase Auth) e as permissões de tela associadas a ele. As senhas são gerenciadas diretamente pelo Supabase Auth e não ficam armazenadas dentro deste sistema;</li>
+        <li>Dados operacionais: motores, estoque, compras, vendas e orçamentos;</li>
+        <li>Dados de clientes: nome, CNPJ/CPF, endereço, telefone e e-mail, quando informados;</li>
+        <li>Dados da empresa: razão social, CNPJ, endereço e contato, usados nos PDFs de orçamento.</li>
+      </ul>
+
+      <h3>3. Finalidade</h3>
+      <p>Os dados são usados exclusivamente para a gestão interna do negócio (controle de estoque, emissão de orçamentos e cobrança) e não são vendidos, alugados ou compartilhados com terceiros para fins de marketing.</p>
+
+      <h3>4. Onde os dados ficam armazenados</h3>
+      <p>Os dados ficam salvos localmente no dispositivo utilizado (armazenamento do navegador) e, quando a sincronização em nuvem está ativa, também em um banco de dados na Supabase, permitindo acesso pelos usuários autorizados a partir de outros dispositivos.</p>
+
+      <h3>5. Segurança</h3>
+      <p>O acesso ao sistema é feito por login oficial (Supabase Auth), com senha individual de cada usuário gerenciada pelo próprio Supabase — este sistema nunca armazena senhas. Para que essa proteção seja efetiva, o acesso aos dados na nuvem deve ficar restrito a usuários autenticados (Row Level Security no Supabase). Nenhum sistema é 100% livre de risco, mas essas medidas reduzem significativamente a chance de vazamento de dados.</p>
+
+      <h3>6. Compartilhamento com terceiros</h3>
+      <p>Os dados não são compartilhados com terceiros, exceto quando exigido por lei ou ordem judicial, ou com provedores estritamente necessários à operação do sistema (ex.: Supabase, como infraestrutura de armazenamento em nuvem).</p>
+
+      <h3>7. Direitos do titular (LGPD)</h3>
+      <p>Qualquer pessoa cujos dados estejam cadastrados no sistema (ex.: um cliente) pode solicitar a confirmação, correção, portabilidade ou exclusão de seus dados, entrando em contato pelos canais informados abaixo.</p>
+
+      <h3>8. Contato</h3>
+      <p id="priv-contato">Em caso de dúvidas sobre esta política ou sobre os dados armazenados, entre em contato com o responsável pela empresa através dos dados cadastrados em "Minha Empresa".</p>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-red" onclick="fecharModal('modal-privacidade')">Entendi</button>
+    </div>
+  </div>
+</div>
 
 <!-- Modal Motor -->
 <div id="modal-motor" class="modal-overlay" style="display:none" onclick="fecharModalSe(event,'modal-motor')">
@@ -845,15 +900,13 @@
     </div>
     <input type="hidden" id="usr-id">
     <div class="form-grid">
-      <div class="field"><label>Usuário (login)</label><input type="text" id="usr-usuario" placeholder="ex: joao"></div>
-      <div class="field"><label>Perfil</label><input type="text" id="usr-perfil" placeholder="ex: Administrador, Vendas, Financeiro..."></div>
-      <div class="field full"><label>Senha</label>
-        <div style="position:relative">
-          <input type="password" id="usr-senha" placeholder="Digite a senha">
-          <button type="button" class="eye-btn" onclick="toggleEyeUsuario()" id="eyeBtnUsuario" style="position:absolute;right:10px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;font-size:15px">👁️</button>
-        </div>
-      </div>
+      <div class="field full"><label>E-mail (login do Supabase)</label><input type="email" id="usr-usuario" placeholder="ex: joao@empresa.com"></div>
+      <div class="field full"><label>Perfil</label><input type="text" id="usr-perfil" placeholder="ex: Administrador, Vendas, Financeiro..."></div>
     </div>
+    <p style="font-size:12px;color:var(--muted);margin-top:2px;line-height:1.5">
+      ℹ️ A senha não é definida aqui. Crie ou gerencie a conta deste e-mail em
+      <strong>Supabase → Authentication → Users</strong>. Aqui você só define o perfil e as telas que essa pessoa pode acessar.
+    </p>
 
     <div style="margin-top:10px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px">
       <label style="font-size:11px;color:var(--muted);font-weight:700;text-transform:uppercase;letter-spacing:.8px">Permissões de Tela</label>
@@ -995,13 +1048,36 @@ let usuarioLogado=null;
 
 function seedUsuariosPadrao(){
   const usuarios=DB.get('usuarios');
-  if(usuarios&&usuarios.length) return; // já existem usuários (locais ou vindos da nuvem) — não sobrescreve
+  if(usuarios&&usuarios.length) return; // já existem usuários cadastrados — não sobrescreve
+  // Primeiro acesso após migrar para o login oficial (Supabase Auth): cadastra
+  // automaticamente a conta já criada no Supabase como Administrador do sistema.
   const padrao=[
-    {id:1,usuario:'admin', senha:'C@pmeg_2026',perfil:'Administrador',permissoes:PERMISSOES_ADMIN},
-    {id:2,usuario:'vendas',senha:'C@pven_2026', perfil:'Vendas',       permissoes:PERMISSOES_VENDAS},
+    {id:1,usuario:'capmega2022@gmail.com',perfil:'Administrador',permissoes:PERMISSOES_ADMIN},
   ];
   DB.set('usuarios',padrao);
-  DB.setObj('usuarioNextId',3);
+  DB.setObj('usuarioNextId',2);
+}
+
+// Garante que a conta oficial do Supabase (capmega2022@gmail.com) sempre tenha acesso de
+// Administrador, mesmo em instalações que já tinham usuários antigos (admin/vendas) cadastrados
+// antes da migração para o login oficial — evita que ninguém consiga mais entrar no sistema.
+function garantirAdminPadrao(){
+  const emailPadrao='capmega2022@gmail.com';
+  const usuarios=DB.get('usuarios');
+  if(usuarios.some(u=>(u.usuario||'').toLowerCase()===emailPadrao)) return;
+  usuarios.push({id:nextId('usuarioNextId'),usuario:emailPadrao,perfil:'Administrador',permissoes:PERMISSOES_ADMIN});
+  DB.set('usuarios',usuarios);
+}
+
+// Remove qualquer senha que tenha ficado salva localmente/na nuvem de antes da
+// migração para o login oficial (Supabase Auth) — essa informação não é mais
+// usada nem deve permanecer armazenada.
+function sanitizarUsuariosLegado(){
+  const usuarios=DB.get('usuarios');
+  if(!usuarios||!usuarios.length) return;
+  let mudou=false;
+  usuarios.forEach(u=>{ if('senha' in u){ delete u.senha; mudou=true; } });
+  if(mudou) DB.set('usuarios',usuarios);
 }
 
 // Corrige contas criadas ANTES de uma tela nova existir (ex: Cobrança), que ficaram
@@ -1017,11 +1093,6 @@ function migrarPermissoesUsuarios(){
     // administrador geral e sempre ganha acesso a todas as telas, inclusive futuras.
     if(u.permissoes.includes('usuarios')){
       if(todasChaves.some(k=>!u.permissoes.includes(k))){ u.permissoes=todasChaves.slice(); mudou=true; }
-    }
-    // As duas contas padrão do sistema (admin/vendas) sempre recebem a tela de Cobrança,
-    // pois ela faz parte do fluxo padrão de aprovação de orçamento.
-    if((u.usuario==='admin'||u.usuario==='vendas')&&!u.permissoes.includes('cobranca')){
-      u.permissoes.push('cobranca'); mudou=true;
     }
   });
   if(mudou) DB.set('usuarios',usuarios);
@@ -1041,7 +1112,7 @@ function aplicarPermissoesNav(){
 }
 
 // ══════════════════════════════════════════════════════════
-//  AUTH
+//  AUTH  (login oficial via Supabase Auth)
 // ══════════════════════════════════════════════════════════
 window.onload=async()=>{
   const savedTheme=localStorage.getItem('ms_theme')||'dark';
@@ -1053,12 +1124,29 @@ window.onload=async()=>{
   await carregarDoSupabase();
   initClean();
   seedUsuariosPadrao();
+  garantirAdminPadrao();
+  sanitizarUsuariosLegado();
   migrarPermissoesUsuarios();
   if(loginBtn){loginBtn.disabled=false;loginBtn.textContent='ENTRAR';}
 
   const saved=DB.getObj('savedLogin',null);
   if(saved){document.getElementById('loginUser').value=saved.user;document.getElementById('loginPass').value=saved.pass;document.getElementById('rememberMe').checked=true;}
-  if(DB.getObj('session',null)) openApp(DB.getObj('session').user);
+
+  if(!supa){
+    showToast('Não foi possível conectar ao Supabase. Verifique sua internet e recarregue a página.','error');
+    return;
+  }
+  const { data }=await supa.auth.getSession();
+  if(data&&data.session&&data.session.user&&data.session.user.email){
+    await openApp(data.session.user.email);
+  }
+  supa.auth.onAuthStateChange((event)=>{
+    if(event==='SIGNED_OUT'){
+      usuarioLogado=null;
+      document.getElementById('app').style.display='none';
+      document.getElementById('loginPage').style.display='flex';
+    }
+  });
 };
 function toggleTheme(){
   const atual=document.documentElement.getAttribute('data-theme')==='light'?'light':'dark';
@@ -1069,28 +1157,45 @@ function toggleTheme(){
   if(document.getElementById('app').style.display==='flex') renderPage(currentPage);
 }
 function toggleEye(){const p=document.getElementById('loginPass'),b=document.getElementById('eyeBtn');p.type=p.type==='password'?'text':'password';b.textContent=p.type==='text'?'🙈':'👁️';}
-function doLogin(){
-  const u=document.getElementById('loginUser').value.trim(),p=document.getElementById('loginPass').value;
-  const encontrado=DB.get('usuarios').find(us=>us.usuario===u&&us.senha===p);
-  if(encontrado){
-    if(document.getElementById('rememberMe').checked) DB.setObj('savedLogin',{user:u,pass:p}); else localStorage.removeItem('ms_savedLogin');
-    DB.setObj('session',{user:u}); openApp(u);
-  } else showToast('Usuário ou senha inválidos','error');
+async function doLogin(){
+  const email=document.getElementById('loginUser').value.trim();
+  const senha=document.getElementById('loginPass').value;
+  if(!email||!senha){showToast('Informe e-mail e senha','error');return;}
+  if(!supa){showToast('Sem conexão com o Supabase. Verifique sua internet e tente novamente.','error');return;}
+  const loginBtn=document.getElementById('loginBtn');
+  if(loginBtn){loginBtn.disabled=true;loginBtn.textContent='ENTRANDO...';}
+  const { data,error }=await supa.auth.signInWithPassword({ email, password:senha });
+  if(loginBtn){loginBtn.disabled=false;loginBtn.textContent='ENTRAR';}
+  if(error||!data||!data.user){
+    showToast('E-mail ou senha inválidos','error');
+    return;
+  }
+  if(document.getElementById('rememberMe').checked) DB.setObj('savedLogin',{user:email,pass:senha});
+  else localStorage.removeItem('ms_savedLogin');
+  await openApp(data.user.email);
 }
-function doLogout(){
-  localStorage.removeItem('ms_session');
+async function doLogout(){
+  if(supa) await supa.auth.signOut().catch(()=>{});
   usuarioLogado=null;
   document.getElementById('app').style.display='none';
   document.getElementById('loginPage').style.display='flex';
 }
-function openApp(user){
-  usuarioLogado=DB.get('usuarios').find(us=>us.usuario===user)||null;
+async function openApp(email){
+  const usuarios=DB.get('usuarios');
+  const usuarioLocal=usuarios.find(us=>(us.usuario||'').toLowerCase()===email.toLowerCase());
+  if(!usuarioLocal){
+    showToast('Seu e-mail ainda não tem permissões cadastradas neste sistema. Peça a um administrador para te cadastrar em Usuários.','error');
+    if(supa) await supa.auth.signOut().catch(()=>{});
+    return;
+  }
+  usuarioLogado=usuarioLocal;
   document.getElementById('loginPage').style.display='none';
   document.getElementById('app').style.display='flex';
-  const n=user.charAt(0).toUpperCase()+user.slice(1);
+  const nomeBase=email.split('@')[0];
+  const n=nomeBase.charAt(0).toUpperCase()+nomeBase.slice(1);
   document.getElementById('sidebarUser').textContent=n;
   document.getElementById('userAvLetter').textContent=n.charAt(0);
-  document.getElementById('sidebarUserRole').textContent=usuarioLogado?usuarioLogado.perfil:'—';
+  document.getElementById('sidebarUserRole').textContent=usuarioLocal.perfil||'—';
   aplicarPermissoesNav();
   const primeira=PAGINAS_APP.find(p=>usuarioPodeAcessar(p.key));
   showPage(primeira?primeira.key:'dashboard');
@@ -1132,6 +1237,16 @@ function renderPage(name){
 function abrirModal(id){document.getElementById(id).style.display='flex';}
 function fecharModal(id){document.getElementById(id).style.display='none';}
 function fecharModalSe(e,id){if(e.target.id===id) fecharModal(id);}
+function abrirModalPrivacidade(){
+  const empresa=DB.getObj('empresa',{nome:'MEGA'});
+  document.getElementById('priv-empresa-nome').textContent=empresa.nome||'MEGA';
+  document.getElementById('priv-data-atualizacao').textContent=new Date().toLocaleDateString('pt-BR');
+  const contatoPartes=[empresa.email,empresa.telefone].filter(Boolean);
+  document.getElementById('priv-contato').textContent=contatoPartes.length
+    ?`Em caso de dúvidas sobre esta política ou sobre os dados armazenados, entre em contato: ${contatoPartes.join(' | ')}.`
+    :'Em caso de dúvidas sobre esta política ou sobre os dados armazenados, entre em contato com o responsável pela empresa através dos dados cadastrados em "Minha Empresa".';
+  abrirModal('modal-privacidade');
+}
 
 function confirmar(title,msg,fn){
   document.getElementById('confirm-title').textContent=title;
@@ -1903,20 +2018,11 @@ function aplicarModeloPermissao(modelo){
   document.getElementById('usr-perfil').value=modelo==='admin'?'Administrador':'Vendas';
 }
 
-function toggleEyeUsuario(){
-  const p=document.getElementById('usr-senha'),b=document.getElementById('eyeBtnUsuario');
-  p.type=p.type==='password'?'text':'password';
-  b.textContent=p.type==='text'?'🙈':'👁️';
-}
-
 function abrirModalUsuario(id){
   document.getElementById('modal-usuario-title').textContent=id?'Editar Usuário':'Novo Usuário';
   document.getElementById('usr-id').value='';
   document.getElementById('usr-usuario').value='';
   document.getElementById('usr-perfil').value='';
-  document.getElementById('usr-senha').value='';
-  document.getElementById('usr-senha').type='password';
-  document.getElementById('eyeBtnUsuario').textContent='👁️';
   renderPermGrid(['dashboard']);
 
   if(id){
@@ -1925,7 +2031,6 @@ function abrirModalUsuario(id){
       document.getElementById('usr-id').value=u.id;
       document.getElementById('usr-usuario').value=u.usuario;
       document.getElementById('usr-perfil').value=u.perfil||'';
-      document.getElementById('usr-senha').value=u.senha||'';
       renderPermGrid(u.permissoes||[]);
     }
   }
@@ -1933,23 +2038,21 @@ function abrirModalUsuario(id){
 }
 
 function salvarUsuario(){
-  const usuario=document.getElementById('usr-usuario').value.trim();
+  const usuario=document.getElementById('usr-usuario').value.trim().toLowerCase();
   const perfil=document.getElementById('usr-perfil').value.trim()||'Usuário';
-  const senha=document.getElementById('usr-senha').value;
   const permissoes=[...document.querySelectorAll('#usr-perm-grid input[type=checkbox]:checked')].map(cb=>cb.dataset.perm);
 
-  if(!usuario){showToast('Informe o nome de usuário (login)','error');return;}
-  if(!senha){showToast('Informe uma senha','error');return;}
+  if(!usuario||!usuario.includes('@')){showToast('Informe um e-mail válido (o mesmo cadastrado no Supabase Auth)','error');return;}
   if(!permissoes.length){showToast('Selecione ao menos uma tela de permissão','error');return;}
 
   const usuarios=DB.get('usuarios');
   const existingId=parseInt(document.getElementById('usr-id').value);
   const duplicado=usuarios.find(u=>u.usuario===usuario&&u.id!==existingId);
-  if(duplicado){showToast('Já existe um usuário com esse login','error');return;}
+  if(duplicado){showToast('Já existe um usuário com esse e-mail','error');return;}
 
   if(existingId){
     const idx=usuarios.findIndex(u=>u.id===existingId);
-    usuarios[idx]={...usuarios[idx],usuario,perfil,senha,permissoes};
+    usuarios[idx]={...usuarios[idx],usuario,perfil,permissoes};
     showToast('Usuário atualizado!');
     if(usuarioLogado&&usuarioLogado.id===existingId){
       usuarioLogado=usuarios[idx];
@@ -1957,8 +2060,8 @@ function salvarUsuario(){
       aplicarPermissoesNav();
     }
   } else {
-    usuarios.push({id:nextId('usuarioNextId'),usuario,perfil,senha,permissoes});
-    showToast('Usuário cadastrado!');
+    usuarios.push({id:nextId('usuarioNextId'),usuario,perfil,permissoes});
+    showToast('Usuário cadastrado! Lembre-se de criar (ou já ter criado) essa conta em Supabase → Authentication → Users.');
   }
   DB.set('usuarios',usuarios);
   fecharModal('modal-usuario');
@@ -1969,7 +2072,7 @@ function deletarUsuario(id){
   const usuarios=DB.get('usuarios');
   if(usuarios.length<=1){showToast('É preciso manter ao menos um usuário cadastrado.','error');return;}
   if(usuarioLogado&&usuarioLogado.id===id){showToast('Você não pode excluir o usuário com o qual está logado.','error');return;}
-  confirmar('Remover Usuário','Tem certeza que deseja remover este usuário? Ele perderá o acesso ao sistema.',()=>{
+  confirmar('Remover Usuário','Tem certeza que deseja remover este usuário? Ele perderá o acesso a este sistema (a conta continua existindo no Supabase Auth até ser removida por lá também).',()=>{
     DB.set('usuarios',DB.get('usuarios').filter(u=>u.id!==id));
     renderUsuarios();showToast('Usuário removido','warning');
   });
@@ -1979,7 +2082,7 @@ function renderUsuarios(){
   const usuarios=DB.get('usuarios');
   const el=document.getElementById('tabela-usuarios');
   if(!usuarios.length){el.innerHTML='<div class="empty-state"><div class="empty-icon">🔐</div>Nenhum usuário cadastrado.</div>';return;}
-  el.innerHTML=`<table><thead><tr><th>Usuário</th><th>Perfil</th><th>Telas Permitidas</th><th>Ações</th></tr></thead><tbody>
+  el.innerHTML=`<table><thead><tr><th>E-mail</th><th>Perfil</th><th>Telas Permitidas</th><th>Ações</th></tr></thead><tbody>
     ${usuarios.map(u=>{
       const perfilClasse=(u.perfil||'').toLowerCase().includes('admin')?'admin':(u.perfil||'').toLowerCase().includes('venda')?'vendas':'';
       const telas=(u.permissoes||[]).map(k=>PAGINAS_APP.find(p=>p.key===k)?.label||k);
