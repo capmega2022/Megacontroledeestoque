@@ -173,6 +173,12 @@
   .field input,.field select{background:var(--surface2);border:1px solid var(--border);
     border-radius:var(--radius-sm);color:var(--text);padding:10px 12px;font-size:14px;outline:none;transition:border .2s;}
   .field input:focus,.field select:focus{border-color:var(--accent);}
+  .select-add-wrap{display:flex;gap:6px;}
+  .select-add-wrap select{flex:1;min-width:0;}
+  .select-add-btn{flex-shrink:0;width:38px;background:var(--surface2);border:1px solid var(--border);
+    border-radius:var(--radius-sm);color:var(--accent);font-size:17px;font-weight:700;cursor:pointer;
+    display:flex;align-items:center;justify-content:center;transition:all .18s;line-height:1;}
+  .select-add-btn:hover{background:var(--accent);color:#fff;border-color:var(--accent);}
   .modal-footer{display:flex;gap:10px;justify-content:flex-end;margin-top:22px;padding-top:18px;border-top:1px solid var(--border);}
 
   /* INFO BOX */
@@ -558,11 +564,16 @@
       <div class="field"><label>Marca</label><input type="text" id="m-marca" placeholder="ex: WEG"></div>
       <div class="field"><label>CV (Cavalos)</label><input type="number" id="m-cv" placeholder="ex: 5" step="0.25" min="0"></div>
       <div class="field"><label>Voltagem</label>
-        <select id="m-volt">
-          <option value="">Selecione</option>
-          <option>110V</option><option>127V</option><option>220V</option>
-          <option>380V</option><option>220/380V</option><option>440V</option>
-        </select>
+        <div class="select-add-wrap">
+          <select id="m-volt" onchange="onChangeOpcaoSelect('m-volt','volt')"></select>
+          <button type="button" class="select-add-btn" title="Adicionar nova voltagem" onclick="abrirModalAddOpcao('volt','m-volt')">+</button>
+        </div>
+      </div>
+      <div class="field"><label>Polos</label>
+        <div class="select-add-wrap">
+          <select id="m-polos" onchange="onChangeOpcaoSelect('m-polos','polos')"></select>
+          <button type="button" class="select-add-btn" title="Adicionar novo nº de polos" onclick="abrirModalAddOpcao('polos','m-polos')">+</button>
+        </div>
       </div>
       <div class="field"><label>Modelo / Código</label><input type="text" id="m-modelo" placeholder="ex: W21 IE3"></div>
       <div class="field"><label>Saldo Inicial</label><input type="number" id="m-saldo-inicial" placeholder="0" step="1" min="0" oninput="atualizarCustoTotalMotor()"></div>
@@ -574,6 +585,27 @@
     <div class="modal-footer">
       <button class="btn btn-ghost" onclick="fecharModal('modal-motor')">Cancelar</button>
       <button class="btn btn-red" onclick="salvarMotor()">💾 Salvar Motor</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal Adicionar Opção (Voltagem / Polos) -->
+<div id="modal-add-option" class="modal-overlay" style="display:none" onclick="fecharModalSe(event,'modal-add-option')">
+  <div class="modal-box" style="max-width:380px">
+    <div class="modal-header">
+      <h2>Adicionar Opção</h2>
+      <button class="modal-close" onclick="fecharModal('modal-add-option')">✕</button>
+    </div>
+    <div class="form-grid">
+      <input type="hidden" id="ao-tipo">
+      <input type="hidden" id="ao-select-alvo">
+      <div class="field full"><label id="ao-label">Novo valor</label>
+        <input type="text" id="ao-valor" placeholder="ex: 220V" onkeydown="if(event.key==='Enter'){event.preventDefault();confirmarAdicionarOpcao();}">
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="fecharModal('modal-add-option')">Cancelar</button>
+      <button class="btn btn-red" onclick="confirmarAdicionarOpcao()">➕ Adicionar</button>
     </div>
   </div>
 </div>
@@ -1180,8 +1212,75 @@ function filterByMotor(list){
 // ══════════════════════════════════════════════════════════
 const fmt=v=>'R$ '+Number(v||0).toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2});
 const fmtDate=d=>{if(!d)return'—';const p=d.split('-');return`${p[2]}/${p[1]}/${p[0]}`;};
-const motorLabel=m=>`${m.marca} | ${m.cv} CV | ${m.volt}${m.modelo?' | '+m.modelo:''}`;
+const motorLabel=m=>`${m.marca} | ${m.cv} CV${m.polos?' | '+m.polos+'P':''} | ${m.volt}${m.modelo?' | '+m.modelo:''}`;
 const getMotorById=id=>DB.get('motores').find(m=>m.id===id);
+
+// ══════════════════════════════════════════════════════════
+//  OPÇÕES CADASTRÁVEIS (Voltagem / Polos)
+// ══════════════════════════════════════════════════════════
+const VOLTAGENS_PADRAO=['110V','127V','220V','380V','220/380V','440V'];
+const POLOS_PADRAO=[2,4,6,8];
+function getOpcoes(tipo){
+  const key=tipo==='polos'?'opcoesPolos':'opcoesVoltagem';
+  const padrao=tipo==='polos'?POLOS_PADRAO:VOLTAGENS_PADRAO;
+  const lista=DB.getObj(key,padrao);
+  return Array.isArray(lista)&&lista.length?lista:padrao.slice();
+}
+function salvarOpcoes(tipo,lista){
+  DB.setObj(tipo==='polos'?'opcoesPolos':'opcoesVoltagem',lista);
+}
+function preencherSelectOpcoes(selectId,tipo,valorAtual){
+  const lista=getOpcoes(tipo);
+  const sel=document.getElementById(selectId);
+  if(!sel) return;
+  const fmtLabel=v=>tipo==='polos'?`${v} polos`:v;
+  sel.innerHTML='<option value="">Selecione</option>'
+    +lista.map(v=>`<option value="${v}" ${(valorAtual!==''&&valorAtual!==null&&valorAtual!==undefined&&String(v)===String(valorAtual))?'selected':''}>${fmtLabel(v)}</option>`).join('')
+    +'<option value="__novo__">➕ Adicionar novo...</option>';
+  sel.dataset.prev=(valorAtual!==null&&valorAtual!==undefined)?String(valorAtual):'';
+}
+function onChangeOpcaoSelect(selectId,tipo){
+  const sel=document.getElementById(selectId);
+  if(!sel) return;
+  if(sel.value==='__novo__'){
+    sel.value=sel.dataset.prev||'';
+    abrirModalAddOpcao(tipo,selectId);
+  } else {
+    sel.dataset.prev=sel.value;
+  }
+}
+function abrirModalAddOpcao(tipo,selectId){
+  document.getElementById('ao-tipo').value=tipo;
+  document.getElementById('ao-select-alvo').value=selectId||'';
+  document.getElementById('ao-label').textContent=tipo==='polos'?'Novo Nº de Polos':'Nova Voltagem';
+  document.getElementById('ao-valor').placeholder=tipo==='polos'?'ex: 12':'ex: 380/440V';
+  document.getElementById('ao-valor').value='';
+  abrirModal('modal-add-option');
+  setTimeout(()=>document.getElementById('ao-valor')?.focus(),80);
+}
+function confirmarAdicionarOpcao(){
+  const tipo=document.getElementById('ao-tipo').value;
+  const selectId=document.getElementById('ao-select-alvo').value;
+  let val=document.getElementById('ao-valor').value.trim();
+  if(!val){showToast('Informe um valor','error');return;}
+  if(tipo==='polos'){
+    const n=parseInt(val.replace(/\D/g,''));
+    if(!n||n<=0){showToast('Informe um número de polos válido','error');return;}
+    val=n;
+  }
+  const lista=getOpcoes(tipo);
+  const existe=lista.some(v=>String(v).toLowerCase()===String(val).toLowerCase());
+  if(existe){
+    showToast('Essa opção já existe','warning');
+  } else {
+    lista.push(val);
+    if(tipo==='polos') lista.sort((a,b)=>a-b);
+    salvarOpcoes(tipo,lista);
+    showToast('Opção adicionada!');
+  }
+  if(selectId) preencherSelectOpcoes(selectId,tipo,val);
+  fecharModal('modal-add-option');
+}
 function nextId(key){const n=DB.getObj(key,1);DB.setObj(key,n+1);return n;}
 function precoMedioMotor(motorId){
   const m=getMotorById(motorId);
@@ -1219,16 +1318,18 @@ function abrirModalMotor(id){
   document.getElementById('m-id').value='';
   document.getElementById('m-marca').value='';
   document.getElementById('m-cv').value='';
-  document.getElementById('m-volt').value='';
   document.getElementById('m-modelo').value='';
   document.getElementById('m-saldo-inicial').value='';
   document.getElementById('m-estoque-minimo').value='';
   document.getElementById('m-custo-unitario').value='';
   document.getElementById('m-desc').value='';
+  let voltAtual='',polosAtual='';
   if(id){
     const m=getMotorById(id);
-    if(m){document.getElementById('m-id').value=m.id;document.getElementById('m-marca').value=m.marca;document.getElementById('m-cv').value=m.cv;document.getElementById('m-volt').value=m.volt;document.getElementById('m-modelo').value=m.modelo||'';document.getElementById('m-saldo-inicial').value=m.saldoInicial||'';document.getElementById('m-estoque-minimo').value=(m.estoqueMinimo!==undefined&&m.estoqueMinimo!==null)?m.estoqueMinimo:'';document.getElementById('m-custo-unitario').value=m.custoInicial||'';document.getElementById('m-desc').value=m.desc||'';}
+    if(m){document.getElementById('m-id').value=m.id;document.getElementById('m-marca').value=m.marca;document.getElementById('m-cv').value=m.cv;document.getElementById('m-modelo').value=m.modelo||'';document.getElementById('m-saldo-inicial').value=m.saldoInicial||'';document.getElementById('m-estoque-minimo').value=(m.estoqueMinimo!==undefined&&m.estoqueMinimo!==null)?m.estoqueMinimo:'';document.getElementById('m-custo-unitario').value=m.custoInicial||'';document.getElementById('m-desc').value=m.desc||'';voltAtual=m.volt||'';polosAtual=(m.polos!==undefined&&m.polos!==null)?m.polos:'';}
   }
+  preencherSelectOpcoes('m-volt','volt',voltAtual);
+  preencherSelectOpcoes('m-polos','polos',polosAtual);
   atualizarCustoTotalMotor();
   abrirModal('modal-motor');
 }
@@ -1243,6 +1344,8 @@ function salvarMotor(){
   const marca=document.getElementById('m-marca').value.trim();
   const cv=parseFloat(document.getElementById('m-cv').value);
   const volt=document.getElementById('m-volt').value;
+  const polosRaw=document.getElementById('m-polos').value;
+  const polos=polosRaw?parseInt(polosRaw):null;
   const modelo=document.getElementById('m-modelo').value.trim();
   const saldoInicialRaw=document.getElementById('m-saldo-inicial').value;
   const estoqueMinimoRaw=document.getElementById('m-estoque-minimo').value;
@@ -1256,10 +1359,10 @@ function salvarMotor(){
   const existingId=parseInt(document.getElementById('m-id').value);
   if(existingId){
     const idx=motores.findIndex(m=>m.id===existingId);
-    if(idx>-1) motores[idx]={...motores[idx],marca,cv,volt,modelo,saldoInicial,estoqueMinimo,custoInicial,desc};
+    if(idx>-1) motores[idx]={...motores[idx],marca,cv,volt,polos,modelo,saldoInicial,estoqueMinimo,custoInicial,desc};
     showToast('Motor atualizado!');
   } else {
-    motores.push({id:nextId('motorNextId'),marca,cv,volt,modelo,saldoInicial,estoqueMinimo,custoInicial,desc});
+    motores.push({id:nextId('motorNextId'),marca,cv,volt,polos,modelo,saldoInicial,estoqueMinimo,custoInicial,desc});
     showToast('Motor cadastrado!');
   }
   DB.set('motores',motores);
@@ -1278,13 +1381,13 @@ function renderCadastro(){
   const motores=DB.get('motores');
   const el=document.getElementById('tabela-motores');
   if(!motores.length){el.innerHTML='<div class="empty-state"><div class="empty-icon">🔧</div>Nenhum motor cadastrado.<br>Clique em <strong>+ Novo Motor</strong> para começar.</div>';return;}
-  el.innerHTML=`<table><thead><tr><th>Marca</th><th>CV</th><th>Voltagem</th><th>Modelo</th><th>Estoque</th><th>Mínimo</th><th>Ações</th></tr></thead><tbody>
+  el.innerHTML=`<table><thead><tr><th>Marca</th><th>CV</th><th>Polos</th><th>Voltagem</th><th>Modelo</th><th>Estoque</th><th>Mínimo</th><th>Ações</th></tr></thead><tbody>
     ${motores.map(m=>{
       const est=estoqueAtualMotor(m.id);
       const min=m.estoqueMinimo!==undefined&&m.estoqueMinimo!==null?m.estoqueMinimo:3;
       return `<tr>
         <td><strong>${m.marca}</strong></td>
-        <td>${m.cv} CV</td><td>${m.volt}</td><td>${m.modelo||'—'}</td>
+        <td>${m.cv} CV</td><td>${m.polos?m.polos+'P':'—'}</td><td>${m.volt}</td><td>${m.modelo||'—'}</td>
         <td><span class="badge ${est<=0?'red':est<=min?'yellow':'green'}">${est} un.</span></td>
         <td>${min} un.</td>
         <td><div class="td-actions">
@@ -1569,7 +1672,7 @@ function renderEstoque(){
   const el=document.getElementById('tabela-estoque');
   if(!motores.length){el.innerHTML='<div class="empty-state"><div class="empty-icon">📦</div>Nenhum motor encontrado com os filtros aplicados.</div>';return;}
   el.innerHTML=`<table><thead><tr>
-    <th>Marca</th><th>CV</th><th>Voltagem</th><th>Modelo</th>
+    <th>Marca</th><th>CV</th><th>Polos</th><th>Voltagem</th><th>Modelo</th>
     <th>Entradas</th><th>Saídas</th><th>Saldo</th>
     <th>Preço Médio</th><th>Valor Total</th><th>Status</th><th>Ações</th>
   </tr></thead><tbody>
@@ -1580,7 +1683,7 @@ function renderEstoque(){
       const e=(m.saldoInicial||0)+DB.get('compras').filter(c=>c.motorId===m.id).reduce((s,c)=>s+c.qty,0);
       const s=DB.get('vendas').filter(v=>v.motorId===m.id).reduce((s,v)=>s+v.qty,0);
       return `<tr>
-        <td><strong>${m.marca}</strong></td><td>${m.cv} CV</td><td>${m.volt}</td><td>${m.modelo||'—'}</td>
+        <td><strong>${m.marca}</strong></td><td>${m.cv} CV</td><td>${m.polos?m.polos+'P':'—'}</td><td>${m.volt}</td><td>${m.modelo||'—'}</td>
         <td>${e}</td><td>${s}</td><td><strong>${est}</strong></td>
         <td>${fmt(pm)}</td><td>${fmt(pm*est)}</td>
         <td>${est<=0?'<span class="badge red">Zerado</span>':est<=min?'<span class="badge yellow">Baixo</span>':'<span class="badge green">OK</span>'}</td>
