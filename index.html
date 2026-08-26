@@ -161,6 +161,30 @@
   .badge.yellow{background:#f59e0b1a;color:var(--yellow);}
   .badge.blue{background:#3b82f61a;color:var(--blue);}
   .td-actions{display:flex;gap:6px;align-items:center;}
+  .badge.gray{background:#88888822;color:var(--muted);}
+
+  /* NAV BADGE (avisos pendentes) */
+  .nav-badge{margin-left:auto;background:var(--accent);color:#fff;font-size:10px;font-weight:800;
+    border-radius:20px;padding:1px 7px;min-width:18px;text-align:center;}
+
+  /* LOCAIS (chips + linhas de distribuição) */
+  .local-chip{display:inline-block;background:var(--surface2);border:1px solid var(--border);
+    border-radius:20px;padding:2px 9px;font-size:11px;font-weight:700;margin:2px 4px 2px 0;color:var(--text);white-space:nowrap;}
+  .local-chip .lc-qty{color:var(--accent);}
+  .locais-lista{display:flex;flex-direction:column;gap:8px;}
+  .local-row{display:grid;grid-template-columns:1fr 96px 34px;gap:8px;align-items:center;}
+  .local-row select,.local-row input{background:var(--surface2);border:1px solid var(--border);
+    border-radius:var(--radius-sm);color:var(--text);padding:9px 11px;font-size:13px;outline:none;width:100%;}
+  .local-row select:focus,.local-row input:focus{border-color:var(--accent);}
+  .local-row .lr-del{background:#ef444418;color:var(--red);border:1px solid #ef444430;border-radius:6px;
+    padding:8px 0;cursor:pointer;font-size:13px;}
+  .local-row .lr-del:hover{background:var(--red);color:#fff;}
+  .locais-box{background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius-sm);padding:12px;}
+  .locais-foot{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;margin-top:10px;}
+  .locais-resumo{font-size:12px;font-weight:700;}
+  .mini-btn{background:var(--surface);border:1px solid var(--border);color:var(--text);border-radius:6px;
+    padding:6px 10px;font-size:12px;font-weight:600;cursor:pointer;}
+  .mini-btn:hover{border-color:var(--accent);color:var(--accent);}
 
   /* MODAL */
   .modal-overlay{position:fixed;inset:0;background:#000000bb;z-index:1000;
@@ -366,6 +390,7 @@
     <button class="nav-link" id="nav-transferencia" onclick="showPage('transferencia')"><span class="nav-icon">🔄</span><span>Transferência de Estoque</span></button>
     <button class="nav-link" id="nav-analise"   onclick="showPage('analise')"><span class="nav-icon">📈</span><span>Análise de Estoque</span></button>
     <div class="nav-section" style="margin-top:14px">Comercial</div>
+    <button class="nav-link" id="nav-avisos"    onclick="showPage('avisos')"><span class="nav-icon">🔔</span><span>Avisos / Solicitações</span><span id="nav-avisos-badge" class="nav-badge" style="display:none">0</span></button>
     <button class="nav-link" id="nav-clientes"  onclick="showPage('clientes')"><span class="nav-icon">👥</span><span>Clientes</span></button>
     <button class="nav-link" id="nav-orcamento" onclick="showPage('orcamento')"><span class="nav-icon">📄</span><span>Orçamentos</span></button>
     <button class="nav-link" id="nav-cobranca"  onclick="showPage('cobranca')"><span class="nav-icon">💰</span><span>Cobrança</span></button>
@@ -467,12 +492,15 @@
     <!-- TRANSFERÊNCIA DE ESTOQUE -->
     <div id="page-transferencia" class="page" style="display:none">
       <div class="page-header">
-        <div class="page-header-left"><h1>Transferência de Estoque</h1><p>Altere o local onde cada motor está guardado</p></div>
-        <button class="btn btn-red" onclick="abrirModalAddOpcao('local',null)">➕ Novo Local</button>
+        <div class="page-header-left"><h1>Transferência de Estoque</h1><p>Movimente quantidades entre os locais de estoque</p></div>
+        <div style="display:flex;gap:10px">
+          <button class="btn btn-ghost" onclick="abrirModalAddOpcao('local',null)">➕ Novo Local</button>
+          <button class="btn btn-red" onclick="abrirModalTransferencia()">🔄 Nova Transferência</button>
+        </div>
       </div>
       <div class="filters-bar" id="transferencia-filters"></div>
       <div class="table-card">
-        <div class="table-header"><h3>Motores</h3></div>
+        <div class="table-header"><h3>Estoque por Local</h3></div>
         <div id="tabela-transferencia"></div>
       </div>
       <div class="table-card" style="margin-top:18px">
@@ -491,6 +519,30 @@
       <div class="table-card">
         <div class="table-header"><h3>Saldo Anterior + Entradas − Saídas = Saldo Final (a preço de custo)</h3></div>
         <div id="tabela-analise"></div>
+      </div>
+    </div>
+
+    <!-- AVISOS / SOLICITAÇÕES DE CLIENTES -->
+    <div id="page-avisos" class="page" style="display:none">
+      <div class="page-header">
+        <div class="page-header-left"><h1>Avisos / Solicitações</h1><p>Produtos que clientes pediram para comprar</p></div>
+        <button class="btn btn-red" onclick="abrirModalAviso()">✚ Nova Solicitação</button>
+      </div>
+      <div class="cards-row" id="avisos-cards"></div>
+      <div class="filters-bar" id="avisos-filters">
+        <div class="filter-group"><label>Situação</label>
+          <select id="avisos-filtro-status" onchange="renderAvisos()">
+            <option value="pendente">Pendentes</option>
+            <option value="disponivel">Só os disponíveis em estoque</option>
+            <option value="atendido">Atendidos</option>
+            <option value="cancelado">Cancelados</option>
+            <option value="">Todos</option>
+          </select>
+        </div>
+      </div>
+      <div class="table-card">
+        <div class="table-header"><h3>Solicitações de Clientes</h3></div>
+        <div id="tabela-avisos"></div>
       </div>
     </div>
 
@@ -649,12 +701,6 @@
         </div>
       </div>
       <div class="field"><label>Modelo / Código</label><input type="text" id="m-modelo" placeholder="ex: W21 IE3"></div>
-      <div class="field"><label>Local de Estoque</label>
-        <div class="select-add-wrap">
-          <select id="m-local" onchange="onChangeOpcaoSelect('m-local','local')"></select>
-          <button type="button" class="select-add-btn" title="Adicionar novo local" onclick="abrirModalAddOpcao('local','m-local')">+</button>
-        </div>
-      </div>
       <div class="field"><label>Saldo Inicial</label><input type="number" id="m-saldo-inicial" placeholder="0" step="1" min="0" oninput="atualizarCustoTotalMotor()"></div>
       <div class="field"><label>Estoque Mínimo</label><input type="number" id="m-estoque-minimo" placeholder="3" step="1" min="0"></div>
       <div class="field"><label>Custo Médio Unitário (R$)</label><input type="number" id="m-custo-unitario" placeholder="0,00" step="0.01" min="0" oninput="atualizarCustoTotalMotor()"></div>
@@ -699,10 +745,22 @@
     <div class="form-grid">
       <input type="hidden" id="c-id">
       <div class="field full"><label>Motor</label><select id="c-motor"></select></div>
-      <div class="field"><label>Quantidade</label><input type="number" id="c-qty" placeholder="1" min="1"></div>
+      <div class="field"><label>Quantidade</label><input type="number" id="c-qty" placeholder="1" min="1" oninput="onQtyCompraChange()"></div>
       <div class="field"><label>Valor de Compra (R$)</label><input type="number" id="c-valor" placeholder="0,00" step="0.01" min="0"></div>
       <div class="field"><label>Data</label><input type="date" id="c-data"></div>
       <div class="field"><label>Fornecedor (opcional)</label><input type="text" id="c-forn" placeholder="Nome do fornecedor"></div>
+      <div class="field full"><label>Onde guardar (local de estoque)</label>
+        <div class="locais-box">
+          <div class="locais-lista" id="c-locais-lista"></div>
+          <div class="locais-foot">
+            <div style="display:flex;gap:8px;flex-wrap:wrap">
+              <button type="button" class="mini-btn" onclick="addLinhaLocal('compra')">➕ Adicionar local</button>
+              <button type="button" class="mini-btn" onclick="abrirModalAddOpcao('local',null)">🏷️ Cadastrar novo local</button>
+            </div>
+            <span class="locais-resumo" id="c-locais-resumo"></span>
+          </div>
+        </div>
+      </div>
     </div>
     <div class="modal-footer">
       <button class="btn btn-ghost" onclick="fecharModal('modal-compra')">Cancelar</button>
@@ -721,20 +779,96 @@
     <div class="form-grid">
       <input type="hidden" id="v-id">
       <div class="field full"><label>Motor</label>
-        <select id="v-motor" onchange="atualizarInfoVenda()"></select></div>
+        <select id="v-motor" onchange="onChangeMotorVenda()"></select></div>
       <div id="venda-info-box" class="info-box full" style="display:none">
         <div class="info-row"><span class="info-lbl">Preço médio de compra</span><span class="info-val" id="v-pm-label" style="color:var(--accent)">—</span></div>
         <div class="info-row"><span class="info-lbl">Estoque disponível</span><span class="info-val" id="v-est-label" style="color:var(--green)">—</span></div>
       </div>
-      <div class="field"><label>Quantidade</label><input type="number" id="v-qty" placeholder="1" min="1" oninput="calcVendaResumo()"></div>
+      <div class="field"><label>Quantidade</label><input type="number" id="v-qty" placeholder="1" min="1" oninput="onQtyVendaChange()"></div>
       <div class="field"><label>Valor de Venda (R$)</label><input type="number" id="v-valor" placeholder="0,00" step="0.01" oninput="calcVendaResumo()"></div>
       <div class="field"><label>Data</label><input type="date" id="v-data"></div>
       <div class="field"><label>Cliente (opcional)</label><input type="text" id="v-cliente" placeholder="Nome do cliente"></div>
+      <div class="field full"><label>De qual local sai o produto</label>
+        <div class="locais-box">
+          <div class="locais-lista" id="v-locais-lista"></div>
+          <div class="locais-foot">
+            <button type="button" class="mini-btn" onclick="addLinhaLocal('venda')">➕ Retirar de outro local</button>
+            <span class="locais-resumo" id="v-locais-resumo"></span>
+          </div>
+        </div>
+      </div>
       <div id="v-resumo" class="full" style="display:none;padding:10px;border-radius:8px;font-size:13px;margin-top:-4px"></div>
     </div>
     <div class="modal-footer">
       <button class="btn btn-ghost" onclick="fecharModal('modal-venda')">Cancelar</button>
       <button class="btn btn-red" onclick="salvarVenda()">💾 Salvar Venda</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal Transferência de Estoque -->
+<div id="modal-transferencia" class="modal-overlay" style="display:none" onclick="fecharModalSe(event,'modal-transferencia')">
+  <div class="modal-box">
+    <div class="modal-header">
+      <h2>Nova Transferência</h2>
+      <button class="modal-close" onclick="fecharModal('modal-transferencia')">✕</button>
+    </div>
+    <div class="form-grid">
+      <div class="field full"><label>Motor</label>
+        <select id="t-motor" onchange="atualizarLocaisTransferencia()"></select></div>
+      <div class="field full"><label>Local de origem</label>
+        <select id="t-origem" onchange="atualizarInfoTransferencia()"></select></div>
+      <div class="field"><label>Quantidade</label>
+        <input type="number" id="t-qty" placeholder="1" min="1" oninput="atualizarInfoTransferencia()"></div>
+      <div class="field"><label>Local de destino</label>
+        <div class="select-add-wrap">
+          <select id="t-destino"></select>
+          <button type="button" class="select-add-btn" title="Cadastrar novo local" onclick="abrirModalAddOpcao('local','t-destino')">+</button>
+        </div>
+      </div>
+      <div id="t-info" class="full" style="display:none;padding:10px;border-radius:8px;font-size:13px"></div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="fecharModal('modal-transferencia')">Cancelar</button>
+      <button class="btn btn-red" onclick="salvarTransferencia()">🔄 Transferir</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal Aviso / Solicitação de Cliente -->
+<div id="modal-aviso" class="modal-overlay" style="display:none" onclick="fecharModalSe(event,'modal-aviso')">
+  <div class="modal-box">
+    <div class="modal-header">
+      <h2 id="modal-aviso-title">Nova Solicitação</h2>
+      <button class="modal-close" onclick="fecharModal('modal-aviso')">✕</button>
+    </div>
+    <div class="form-grid">
+      <input type="hidden" id="av-id">
+      <div class="field"><label>Cliente</label><input type="text" id="av-cliente" placeholder="Nome do cliente" list="av-clientes-list">
+        <datalist id="av-clientes-list"></datalist></div>
+      <div class="field"><label>Contato (opcional)</label><input type="text" id="av-contato" placeholder="Telefone / e-mail"></div>
+      <div class="field full"><label>Motor solicitado</label>
+        <select id="av-motor" onchange="atualizarInfoAviso()"></select></div>
+      <div class="field full"><label>Descrição livre (se o motor não estiver cadastrado)</label>
+        <input type="text" id="av-desc" placeholder="ex: WEG 7,5 CV 4P 380V"></div>
+      <div id="av-info-box" class="info-box full" style="display:none">
+        <div class="info-row"><span class="info-lbl">Estoque disponível hoje</span><span class="info-val" id="av-est-label">—</span></div>
+      </div>
+      <div class="field"><label>Quantidade desejada</label><input type="number" id="av-qty" placeholder="1" min="1"></div>
+      <div class="field"><label>Data da solicitação</label><input type="date" id="av-data"></div>
+      <div class="field"><label>Prazo do cliente (opcional)</label><input type="date" id="av-prazo"></div>
+      <div class="field"><label>Situação</label>
+        <select id="av-status">
+          <option value="pendente">Pendente</option>
+          <option value="atendido">Atendido</option>
+          <option value="cancelado">Cancelado</option>
+        </select>
+      </div>
+      <div class="field full"><label>Observação (opcional)</label><input type="text" id="av-obs" placeholder="ex: cliente aceita marca similar"></div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="fecharModal('modal-aviso')">Cancelar</button>
+      <button class="btn btn-red" onclick="salvarAviso()">💾 Salvar Solicitação</button>
     </div>
   </div>
 </div>
@@ -1046,6 +1180,7 @@ function initClean(){
   DB.set('clientes',[]); DB.setObj('clienteNextId',1);
   DB.set('orcamentos',[]); DB.setObj('orcamentoNextId',1);
   DB.set('transferencias',[]); DB.setObj('transferenciaNextId',1);
+  DB.set('avisos',[]); DB.setObj('avisoNextId',1);
   DB.setObj('empresa',{nome:'MEGA',cnpj:'',ie:'',endereco:'',cidade:'',uf:'',cep:'',telefone:'',email:'',site:''});
   localStorage.setItem('ms_initialized','1');
 }
@@ -1061,6 +1196,7 @@ const PAGINAS_APP=[
   {key:'estoque',    label:'📦 Estoque'},
   {key:'transferencia', label:'🔄 Transferência de Estoque'},
   {key:'analise',    label:'📈 Análise de Estoque'},
+  {key:'avisos',     label:'🔔 Avisos / Solicitações'},
   {key:'clientes',   label:'👥 Clientes'},
   {key:'orcamento',  label:'📄 Orçamentos'},
   {key:'cobranca',   label:'💰 Cobrança'},
@@ -1068,7 +1204,7 @@ const PAGINAS_APP=[
   {key:'usuarios',   label:'🔐 Usuários'},
 ];
 const PERMISSOES_ADMIN=PAGINAS_APP.map(p=>p.key);
-const PERMISSOES_VENDAS=['dashboard','venda','estoque','clientes','orcamento','cobranca'];
+const PERMISSOES_VENDAS=['dashboard','venda','estoque','avisos','clientes','orcamento','cobranca'];
 
 let usuarioLogado=null;
 
@@ -1174,6 +1310,14 @@ window.onload=async()=>{
     }
   });
 };
+// Avisa no login quando alguma solicitação de cliente já pode ser atendida com o estoque atual
+function avisarSolicitacoesDisponiveis(){
+  if(!usuarioPodeAcessar('avisos')) return;
+  const disp=avisosPendentesDisponiveis();
+  if(!disp.length) return;
+  setTimeout(()=>showToast(`${disp.length} solicitação(ões) de cliente já podem ser atendidas com o estoque atual — veja em Avisos.`,'warning'),1200);
+}
+
 function toggleTheme(){
   const atual=document.documentElement.getAttribute('data-theme')==='light'?'light':'dark';
   const novo=atual==='light'?'dark':'light';
@@ -1223,6 +1367,8 @@ async function openApp(email){
   document.getElementById('userAvLetter').textContent=n.charAt(0);
   document.getElementById('sidebarUserRole').textContent=usuarioLocal.perfil||'—';
   aplicarPermissoesNav();
+  atualizarBadgeAvisos();
+  avisarSolicitacoesDisponiveis();
   const primeira=PAGINAS_APP.find(p=>usuarioPodeAcessar(p.key));
   showPage(primeira?primeira.key:'dashboard');
 }
@@ -1254,7 +1400,7 @@ function showPage(name){
 function renderPage(name){
   ({dashboard:renderDashboard,cadastro:renderCadastro,compra:renderCompra,venda:renderVenda,estoque:renderEstoque,
     transferencia:renderTransferencia,
-    analise:renderAnaliseEstoque,clientes:renderClientes,orcamento:renderOrcamentos,cobranca:renderCobranca,
+    analise:renderAnaliseEstoque,avisos:renderAvisos,clientes:renderClientes,orcamento:renderOrcamentos,cobranca:renderCobranca,
     empresa:renderEmpresa,usuarios:renderUsuarios})[name]?.();
 }
 
@@ -1287,12 +1433,34 @@ function confirmar(title,msg,fn){
 // ══════════════════════════════════════════════════════════
 let activeFilters={};
 let currentPage='dashboard';
+// Páginas que possuem os filtros extras (Polos / Modelo / Local / Situação do estoque)
+const PAGINAS_FILTRO_COMPLETO=['compra','venda','estoque','transferencia'];
+
 function buildFiltersHTML(page){
   const motores=DB.get('motores');
   const marcas=[...new Set(motores.map(m=>m.marca))];
   const cvs=[...new Set(motores.map(m=>m.cv))].sort((a,b)=>a-b);
   const volts=[...new Set(motores.map(m=>m.volt))];
+  const polos=[...new Set(motores.map(m=>m.polos).filter(p=>p!==undefined&&p!==null&&p!==''))].sort((a,b)=>a-b);
+  const modelos=[...new Set(motores.map(m=>m.modelo).filter(Boolean))].sort((a,b)=>String(a).localeCompare(String(b),'pt-BR'));
+  const locais=todosLocais();
   const f=activeFilters;
+  const extras=PAGINAS_FILTRO_COMPLETO.includes(page)?`
+    <div class="filter-group"><label>Polos</label><select id="flt-polos">
+      <option value="">Todos</option>${polos.map(p=>`<option value="${p}"${f.polos==p?' selected':''}>${p}P</option>`).join('')}
+    </select></div>
+    <div class="filter-group"><label>Modelo</label><select id="flt-modelo">
+      <option value="">Todos</option>${modelos.map(mo=>`<option value="${esc(mo)}"${f.modelo===mo?' selected':''}>${esc(mo)}</option>`).join('')}
+    </select></div>
+    <div class="filter-group"><label>Local de Estoque</label><select id="flt-local">
+      <option value="">Todos</option>${locais.map(l=>`<option value="${esc(l)}"${f.local===l?' selected':''}>${esc(l)}</option>`).join('')}
+    </select></div>
+    <div class="filter-group"><label>Estoque</label><select id="flt-situacao">
+      <option value="">Todos</option>
+      <option value="com"${f.situacao==='com'?' selected':''}>Com estoque</option>
+      <option value="baixo"${f.situacao==='baixo'?' selected':''}>Estoque baixo</option>
+      <option value="sem"${f.situacao==='sem'?' selected':''}>Sem estoque</option>
+    </select></div>`:'';
   return `
     <div class="filter-group"><label>Ano</label><select id="flt-ano">
       <option value="">Todos</option>${[2024,2025,2026].map(y=>`<option value="${y}"${f.ano==y?' selected':''}>${y}</option>`).join('')}
@@ -1305,11 +1473,12 @@ function buildFiltersHTML(page){
       <option value="">Todos</option>${cvs.map(c=>`<option value="${c}"${f.cv==c?' selected':''}>${c} CV</option>`).join('')}
     </select></div>
     <div class="filter-group"><label>Voltagem</label><select id="flt-volt">
-      <option value="">Todas</option>${volts.map(v=>`<option value="${v}"${f.volt==v?' selected':''}>${v}</option>`).join('')}
+      <option value="">Todas</option>${volts.map(v=>`<option value="${esc(v)}"${f.volt===v?' selected':''}>${esc(v)}</option>`).join('')}
     </select></div>
     <div class="filter-group"><label>Marca</label><select id="flt-marca">
-      <option value="">Todas</option>${marcas.map(m=>`<option value="${m}"${f.marca==m?' selected':''}>${m}</option>`).join('')}
+      <option value="">Todas</option>${marcas.map(m=>`<option value="${esc(m)}"${f.marca===m?' selected':''}>${esc(m)}</option>`).join('')}
     </select></div>
+    ${extras}
     <div style="display:flex;gap:8px;align-items:flex-end">
       <button class="btn btn-red" style="padding:8px 16px" onclick="applyFilters('${page}')">Filtrar</button>
       <button class="btn btn-ghost" style="padding:8px 14px" onclick="clearFilters('${page}')">Limpar</button>
@@ -1323,6 +1492,10 @@ function applyFilters(page){
     cv:document.getElementById('flt-cv')?.value||'',
     volt:document.getElementById('flt-volt')?.value||'',
     marca:document.getElementById('flt-marca')?.value||'',
+    polos:document.getElementById('flt-polos')?.value||'',
+    modelo:document.getElementById('flt-modelo')?.value||'',
+    local:document.getElementById('flt-local')?.value||'',
+    situacao:document.getElementById('flt-situacao')?.value||'',
   };
   renderPage(page);
 }
@@ -1337,14 +1510,52 @@ function filterByDate(list,field){
     return true;
   });
 }
+
+// Situação do estoque de um motor: 'sem' | 'baixo' | 'com'
+function situacaoEstoqueMotor(m){
+  const est=estoqueAtualMotor(m.id);
+  const min=(m.estoqueMinimo!==undefined&&m.estoqueMinimo!==null)?m.estoqueMinimo:3;
+  if(est<=0) return 'sem';
+  if(est<=min) return 'baixo';
+  return 'com';
+}
+
+// Confere se o MOTOR passa nos filtros de características (CV, voltagem, marca, polos, modelo)
+function motorPassaFiltroBase(m){
+  const f=activeFilters;
+  if(!m) return false;
+  if(f.cv&&String(m.cv)!==String(f.cv)) return false;
+  if(f.volt&&m.volt!==f.volt) return false;
+  if(f.marca&&m.marca!==f.marca) return false;
+  if(f.polos&&String(m.polos??'')!==String(f.polos)) return false;
+  if(f.modelo&&String(m.modelo||'')!==String(f.modelo)) return false;
+  if(f.situacao&&situacaoEstoqueMotor(m)!==f.situacao) return false;
+  return true;
+}
+
+// Filtro usado nas listas de LANÇAMENTOS (compras / vendas)
 function filterByMotor(list){
   const f=activeFilters,motores=DB.get('motores');
   return list.filter(item=>{
     const m=motores.find(x=>x.id===item.motorId);
-    if(!m) return false;
-    if(f.cv&&String(m.cv)!==String(f.cv)) return false;
-    if(f.volt&&m.volt!==f.volt) return false;
-    if(f.marca&&m.marca!==f.marca) return false;
+    if(!motorPassaFiltroBase(m)) return false;
+    if(f.local){
+      const ls=locaisDoLancamento(item,m);
+      if(!ls.some(x=>x.local===f.local)) return false;
+    }
+    return true;
+  });
+}
+
+// Filtro usado nas listas de MOTORES (estoque / transferência)
+function filterMotores(list){
+  const f=activeFilters;
+  return list.filter(m=>{
+    if(!motorPassaFiltroBase(m)) return false;
+    if(f.local){
+      const mapa=estoquePorLocal(m.id);
+      if(!(mapa.get(f.local)>0)) return false;
+    }
     return true;
   });
 }
@@ -1356,6 +1567,114 @@ const fmt=v=>'R$ '+Number(v||0).toLocaleString('pt-BR',{minimumFractionDigits:2,
 const fmtDate=d=>{if(!d)return'—';const p=d.split('-');return`${p[2]}/${p[1]}/${p[0]}`;};
 const motorLabel=m=>`${m.marca} | ${m.cv} CV${m.polos?' | '+m.polos+'P':''} | ${m.volt}${m.modelo?' | '+m.modelo:''}`;
 const getMotorById=id=>DB.get('motores').find(m=>m.id===id);
+const esc=v=>String(v??'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+
+// ══════════════════════════════════════════════════════════
+//  ESTOQUE POR LOCAL (multi-local)
+//  Cada compra/venda guarda um array "locais": [{local:'A1',qty:1},...]
+//  Lançamentos antigos (sem esse campo) são tratados automaticamente.
+// ══════════════════════════════════════════════════════════
+const SEM_LOCAL='(Sem local)';
+
+function normalizarLocais(locais){
+  if(!Array.isArray(locais)) return [];
+  return locais
+    .map(x=>({local:(x&&x.local)?String(x.local):SEM_LOCAL,qty:parseInt(x&&x.qty)||0}))
+    .filter(x=>x.qty>0);
+}
+
+// Local "histórico" do motor — usado só para lançamentos antigos, feitos antes do multi-local
+function localLegado(m){ return (m&&m.local)?m.local:SEM_LOCAL; }
+
+// Retorna a distribuição de um lançamento (compra ou venda), com fallback para lançamentos antigos
+function locaisDoLancamento(item,motor){
+  const ls=normalizarLocais(item.locais);
+  if(ls.length) return ls;
+  return [{local:localLegado(motor||getMotorById(item.motorId)),qty:parseInt(item.qty)||0}];
+}
+
+// Lista de todos os locais conhecidos (cadastrados + usados em lançamentos)
+function todosLocais(){
+  const set=new Set(getOpcoes('local').map(String));
+  const push=l=>{if(l)set.add(String(l));};
+  DB.get('motores').forEach(m=>push(m.local));
+  DB.get('compras').forEach(c=>normalizarLocais(c.locais).forEach(x=>push(x.local)));
+  DB.get('vendas').forEach(v=>normalizarLocais(v.locais).forEach(x=>push(x.local)));
+  DB.get('transferencias').forEach(t=>{push(t.de);push(t.para);});
+  const lista=[...set].filter(l=>l&&l!=='(sem local definido)').sort((a,b)=>a.localeCompare(b,'pt-BR'));
+  return lista;
+}
+
+// Saldo do motor separado por local. Retorna um Map(local => qtd)
+function estoquePorLocal(motorId){
+  const m=getMotorById(motorId);
+  const mapa=new Map();
+  const add=(l,q)=>{const k=l||SEM_LOCAL;mapa.set(k,(mapa.get(k)||0)+q);};
+
+  // Saldo inicial do cadastro
+  if(m&&m.saldoInicial>0) add(localLegado(m),m.saldoInicial);
+
+  // Entradas (compras e acertos positivos)
+  DB.get('compras').filter(c=>c.motorId===motorId).forEach(c=>{
+    locaisDoLancamento(c,m).forEach(x=>add(x.local,x.qty));
+  });
+
+  // Transferências entre locais (apenas as novas, que movem quantidade)
+  DB.get('transferencias').filter(t=>t.motorId===motorId&&(parseInt(t.qty)||0)>0).forEach(t=>{
+    add(t.de||SEM_LOCAL,-(parseInt(t.qty)||0));
+    add(t.para||SEM_LOCAL, (parseInt(t.qty)||0));
+  });
+
+  // Saídas (vendas e acertos negativos)
+  let pendente=0;
+  DB.get('vendas').filter(v=>v.motorId===motorId).forEach(v=>{
+    const ls=normalizarLocais(v.locais);
+    if(ls.length) ls.forEach(x=>add(x.local,-x.qty));
+    else pendente+=parseInt(v.qty)||0; // venda antiga, sem local definido
+  });
+  // Vendas antigas são descontadas dos locais com maior saldo
+  if(pendente>0){
+    const ordenado=[...mapa.entries()].sort((a,b)=>b[1]-a[1]);
+    for(const [k,val] of ordenado){
+      if(pendente<=0) break;
+      if(val<=0) continue;
+      const tirar=Math.min(val,pendente);
+      mapa.set(k,val-tirar);
+      pendente-=tirar;
+    }
+    if(pendente>0) add(SEM_LOCAL,-pendente);
+  }
+  return mapa;
+}
+
+// Locais com saldo positivo, do maior para o menor
+function locaisComSaldo(motorId,extra){
+  const mapa=estoquePorLocal(motorId);
+  if(extra) normalizarLocais(extra).forEach(x=>mapa.set(x.local,(mapa.get(x.local)||0)+x.qty));
+  return [...mapa.entries()].filter(([,q])=>q>0).map(([local,qty])=>({local,qty}))
+    .sort((a,b)=>b.qty-a.qty||a.local.localeCompare(b.local,'pt-BR'));
+}
+
+// Distribui automaticamente uma quantidade pelos locais com saldo (usado em orçamentos e acertos)
+function alocarAutomatico(motorId,qty,extra){
+  let restante=parseInt(qty)||0;
+  const saida=[];
+  for(const l of locaisComSaldo(motorId,extra)){
+    if(restante<=0) break;
+    const tirar=Math.min(l.qty,restante);
+    saida.push({local:l.local,qty:tirar});
+    restante-=tirar;
+  }
+  if(restante>0) saida.push({local:SEM_LOCAL,qty:restante});
+  return saida;
+}
+
+// Chips visuais "A1 (2)" para as tabelas
+function chipsLocais(lista){
+  const ls=Array.isArray(lista)?lista:[];
+  if(!ls.length) return '<span style="color:var(--muted)">—</span>';
+  return ls.map(x=>`<span class="local-chip">${esc(x.local)} <span class="lc-qty">(${x.qty})</span></span>`).join('');
+}
 
 // ══════════════════════════════════════════════════════════
 //  OPÇÕES CADASTRÁVEIS (Voltagem / Polos / Local de Estoque)
@@ -1425,7 +1744,13 @@ function confirmarAdicionarOpcao(){
     showToast('Opção adicionada!');
   }
   if(selectId) preencherSelectOpcoes(selectId,tipo,val);
-  if(tipo==='local'&&currentPage==='transferencia') renderTransferencia();
+  if(tipo==='local'){
+    // atualiza as listas de local que estiverem abertas na tela
+    if(document.getElementById('modal-compra')?.style.display==='flex') renderLocaisEditor('compra');
+    if(document.getElementById('modal-venda')?.style.display==='flex') renderLocaisEditor('venda');
+    if(document.getElementById('modal-transferencia')?.style.display==='flex') atualizarLocaisTransferencia();
+    if(currentPage==='transferencia') renderTransferencia();
+  }
   fecharModal('modal-add-option');
 }
 function nextId(key){const n=DB.getObj(key,1);DB.setObj(key,n+1);return n;}
@@ -1470,14 +1795,13 @@ function abrirModalMotor(id){
   document.getElementById('m-estoque-minimo').value='';
   document.getElementById('m-custo-unitario').value='';
   document.getElementById('m-desc').value='';
-  let voltAtual='',polosAtual='',localAtual='';
+  let voltAtual='',polosAtual='';
   if(id){
     const m=getMotorById(id);
-    if(m){document.getElementById('m-id').value=m.id;document.getElementById('m-marca').value=m.marca;document.getElementById('m-cv').value=m.cv;document.getElementById('m-modelo').value=m.modelo||'';document.getElementById('m-saldo-inicial').value=m.saldoInicial||'';document.getElementById('m-estoque-minimo').value=(m.estoqueMinimo!==undefined&&m.estoqueMinimo!==null)?m.estoqueMinimo:'';document.getElementById('m-custo-unitario').value=m.custoInicial||'';document.getElementById('m-desc').value=m.desc||'';voltAtual=m.volt||'';polosAtual=(m.polos!==undefined&&m.polos!==null)?m.polos:'';localAtual=m.local||'';}
+    if(m){document.getElementById('m-id').value=m.id;document.getElementById('m-marca').value=m.marca;document.getElementById('m-cv').value=m.cv;document.getElementById('m-modelo').value=m.modelo||'';document.getElementById('m-saldo-inicial').value=m.saldoInicial||'';document.getElementById('m-estoque-minimo').value=(m.estoqueMinimo!==undefined&&m.estoqueMinimo!==null)?m.estoqueMinimo:'';document.getElementById('m-custo-unitario').value=m.custoInicial||'';document.getElementById('m-desc').value=m.desc||'';voltAtual=m.volt||'';polosAtual=(m.polos!==undefined&&m.polos!==null)?m.polos:'';}
   }
   preencherSelectOpcoes('m-volt','volt',voltAtual);
   preencherSelectOpcoes('m-polos','polos',polosAtual);
-  preencherSelectOpcoes('m-local','local',localAtual);
   atualizarCustoTotalMotor();
   abrirModal('modal-motor');
 }
@@ -1494,7 +1818,6 @@ function salvarMotor(){
   const volt=document.getElementById('m-volt').value;
   const polosRaw=document.getElementById('m-polos').value;
   const polos=polosRaw?parseInt(polosRaw):null;
-  const local=document.getElementById('m-local').value||'';
   const modelo=document.getElementById('m-modelo').value.trim();
   const saldoInicialRaw=document.getElementById('m-saldo-inicial').value;
   const estoqueMinimoRaw=document.getElementById('m-estoque-minimo').value;
@@ -1508,10 +1831,10 @@ function salvarMotor(){
   const existingId=parseInt(document.getElementById('m-id').value);
   if(existingId){
     const idx=motores.findIndex(m=>m.id===existingId);
-    if(idx>-1) motores[idx]={...motores[idx],marca,cv,volt,polos,local,modelo,saldoInicial,estoqueMinimo,custoInicial,desc};
+    if(idx>-1) motores[idx]={...motores[idx],marca,cv,volt,polos,modelo,saldoInicial,estoqueMinimo,custoInicial,desc};
     showToast('Motor atualizado!');
   } else {
-    motores.push({id:nextId('motorNextId'),marca,cv,volt,polos,local,modelo,saldoInicial,estoqueMinimo,custoInicial,desc});
+    motores.push({id:nextId('motorNextId'),marca,cv,volt,polos,modelo,saldoInicial,estoqueMinimo,custoInicial,desc});
     showToast('Motor cadastrado!');
   }
   DB.set('motores',motores);
@@ -1530,13 +1853,13 @@ function renderCadastro(){
   const motores=DB.get('motores');
   const el=document.getElementById('tabela-motores');
   if(!motores.length){el.innerHTML='<div class="empty-state"><div class="empty-icon">🔧</div>Nenhum motor cadastrado.<br>Clique em <strong>+ Novo Motor</strong> para começar.</div>';return;}
-  el.innerHTML=`<table><thead><tr><th>Marca</th><th>CV</th><th>Polos</th><th>Voltagem</th><th>Modelo</th><th>Local</th><th>Estoque</th><th>Mínimo</th><th>Ações</th></tr></thead><tbody>
+  el.innerHTML=`<table><thead><tr><th>Marca</th><th>CV</th><th>Polos</th><th>Voltagem</th><th>Modelo</th><th>Estoque</th><th>Mínimo</th><th>Ações</th></tr></thead><tbody>
     ${motores.map(m=>{
       const est=estoqueAtualMotor(m.id);
       const min=m.estoqueMinimo!==undefined&&m.estoqueMinimo!==null?m.estoqueMinimo:3;
       return `<tr>
         <td><strong>${m.marca}</strong></td>
-        <td>${m.cv} CV</td><td>${m.polos?m.polos+'P':'—'}</td><td>${m.volt}</td><td>${m.modelo||'—'}</td><td>${m.local||'—'}</td>
+        <td>${m.cv} CV</td><td>${m.polos?m.polos+'P':'—'}</td><td>${esc(m.volt)}</td><td>${esc(m.modelo)||'—'}</td>
         <td><span class="badge ${est<=0?'red':est<=min?'yellow':'green'}">${est} un.</span></td>
         <td>${min} un.</td>
         <td><div class="td-actions">
@@ -1549,21 +1872,157 @@ function renderCadastro(){
 }
 
 // ══════════════════════════════════════════════════════════
+//  DISTRIBUIÇÃO POR LOCAL (editor usado em Compra e Venda)
+// ══════════════════════════════════════════════════════════
+let compraLocaisTemp=[];
+let vendaLocaisTemp=[];
+const getLocaisTemp=ctx=>ctx==='compra'?compraLocaisTemp:vendaLocaisTemp;
+function setLocaisTemp(ctx,arr){ if(ctx==='compra') compraLocaisTemp=arr; else vendaLocaisTemp=arr; }
+const idLista=ctx=>ctx==='compra'?'c-locais-lista':'v-locais-lista';
+const idResumo=ctx=>ctx==='compra'?'c-locais-resumo':'v-locais-resumo';
+const qtyTotalCtx=ctx=>parseInt(document.getElementById(ctx==='compra'?'c-qty':'v-qty')?.value)||0;
+
+// Locais oferecidos no editor. Na venda mostra o saldo disponível de cada local.
+function opcoesLocaisEditor(ctx){
+  if(ctx==='compra') return todosLocais().map(l=>({local:l,qty:null}));
+  const motorId=parseInt(document.getElementById('v-motor')?.value);
+  if(!motorId) return [];
+  return locaisComSaldo(motorId,vendaLocaisDevolvidos());
+}
+
+// Ao EDITAR uma venda, as unidades já lançadas voltam a contar como disponíveis
+function vendaLocaisDevolvidos(){
+  const editId=parseInt(document.getElementById('v-id')?.value);
+  if(!editId) return null;
+  const v=DB.get('vendas').find(x=>x.id===editId);
+  if(!v) return null;
+  const motorId=parseInt(document.getElementById('v-motor')?.value);
+  if(v.motorId!==motorId) return null;
+  return locaisDoLancamento(v,getMotorById(v.motorId));
+}
+
+function renderLocaisEditor(ctx){
+  const el=document.getElementById(idLista(ctx));
+  if(!el) return;
+  const lista=getLocaisTemp(ctx);
+  const opcoes=opcoesLocaisEditor(ctx);
+  if(!lista.length){
+    el.innerHTML=`<div style="font-size:12px;color:var(--muted)">Nenhum local informado — as unidades ficarão como <strong>${SEM_LOCAL}</strong>.</div>`;
+    atualizarResumoLocais(ctx);
+    return;
+  }
+  el.innerHTML=lista.map((linha,i)=>{
+    const opts=opcoes.map(o=>{
+      const sel=String(o.local)===String(linha.local)?' selected':'';
+      const info=(ctx==='venda'&&o.qty!==null)?` — ${o.qty} disp.`:'';
+      return `<option value="${esc(o.local)}"${sel}>${esc(o.local)}${info}</option>`;
+    }).join('');
+    const localDesconhecido=linha.local&&!opcoes.some(o=>String(o.local)===String(linha.local));
+    return `<div class="local-row">
+      <select onchange="setLocalLinha('${ctx}',${i},this.value)">
+        <option value=""${!linha.local?' selected':''}>${SEM_LOCAL}</option>
+        ${localDesconhecido?`<option value="${esc(linha.local)}" selected>${esc(linha.local)}</option>`:''}
+        ${opts}
+      </select>
+      <input type="number" min="1" step="1" value="${linha.qty||''}" placeholder="Qtd"
+        oninput="setQtyLinha('${ctx}',${i},this.value)">
+      <button type="button" class="lr-del" title="Remover" onclick="removerLinhaLocal('${ctx}',${i})">✕</button>
+    </div>`;
+  }).join('');
+  atualizarResumoLocais(ctx);
+}
+
+function atualizarResumoLocais(ctx){
+  const el=document.getElementById(idResumo(ctx));
+  if(!el) return;
+  const total=qtyTotalCtx(ctx);
+  const soma=getLocaisTemp(ctx).reduce((s,x)=>s+(parseInt(x.qty)||0),0);
+  if(!total&&!soma){el.textContent='';return;}
+  const ok=soma===total;
+  el.style.color=ok?'var(--green)':'var(--yellow)';
+  el.textContent=`${soma} de ${total} un. distribuída(s)`+(ok?' ✓':'');
+}
+
+function setLocalLinha(ctx,i,valor){
+  const lista=getLocaisTemp(ctx);
+  if(!lista[i]) return;
+  lista[i].local=valor||'';
+  renderLocaisEditor(ctx);
+}
+function setQtyLinha(ctx,i,valor){
+  const lista=getLocaisTemp(ctx);
+  if(!lista[i]) return;
+  lista[i].qty=parseInt(valor)||0;
+  atualizarResumoLocais(ctx);
+}
+function addLinhaLocal(ctx){
+  const lista=getLocaisTemp(ctx);
+  const total=qtyTotalCtx(ctx);
+  const soma=lista.reduce((s,x)=>s+(parseInt(x.qty)||0),0);
+  const restante=Math.max(total-soma,0);
+  lista.push({local:'',qty:restante>0?restante:1});
+  renderLocaisEditor(ctx);
+}
+function removerLinhaLocal(ctx,i){
+  const lista=getLocaisTemp(ctx);
+  lista.splice(i,1);
+  renderLocaisEditor(ctx);
+}
+// Quando a quantidade total muda e só existe uma linha, ela acompanha o total
+function sincronizarQtyUnicaLinha(ctx){
+  const lista=getLocaisTemp(ctx);
+  const total=qtyTotalCtx(ctx);
+  if(lista.length<=1){
+    if(!lista.length) lista.push({local:'',qty:total});
+    else lista[0].qty=total;
+    renderLocaisEditor(ctx);
+  } else atualizarResumoLocais(ctx);
+}
+function onQtyCompraChange(){ sincronizarQtyUnicaLinha('compra'); }
+function onQtyVendaChange(){ sincronizarQtyUnicaLinha('venda'); calcVendaResumo(); }
+
+// Valida e devolve a lista final de locais (ou null + mensagem de erro)
+function coletarLocais(ctx,total){
+  const lista=getLocaisTemp(ctx).filter(x=>(parseInt(x.qty)||0)>0);
+  if(!lista.length) return {locais:[{local:SEM_LOCAL,qty:total}]};
+  const soma=lista.reduce((s,x)=>s+(parseInt(x.qty)||0),0);
+  if(soma!==total) return {erro:`A soma das quantidades por local (${soma}) precisa ser igual à quantidade total (${total}).`};
+  // agrupa locais repetidos
+  const mapa=new Map();
+  lista.forEach(x=>{
+    const k=x.local||SEM_LOCAL;
+    mapa.set(k,(mapa.get(k)||0)+(parseInt(x.qty)||0));
+  });
+  return {locais:[...mapa.entries()].map(([local,qty])=>({local,qty}))};
+}
+
+// ══════════════════════════════════════════════════════════
 //  COMPRA
 // ══════════════════════════════════════════════════════════
 function abrirModalCompra(id){
   document.getElementById('modal-compra-title').textContent=id?'Editar Compra':'Nova Compra';
   document.getElementById('c-id').value='';
   const motores=DB.get('motores');
-  document.getElementById('c-motor').innerHTML=motores.map(m=>`<option value="${m.id}">${motorLabel(m)}</option>`).join('');
+  document.getElementById('c-motor').innerHTML=motores.map(m=>`<option value="${m.id}">${esc(motorLabel(m))}</option>`).join('');
   document.getElementById('c-qty').value='';
   document.getElementById('c-valor').value='';
   document.getElementById('c-data').value=new Date().toISOString().split('T')[0];
   document.getElementById('c-forn').value='';
+  compraLocaisTemp=[{local:'',qty:0}];
   if(id){
     const c=DB.get('compras').find(x=>x.id===id);
-    if(c){document.getElementById('c-id').value=c.id;document.getElementById('c-motor').value=c.motorId;document.getElementById('c-qty').value=c.qty;document.getElementById('c-valor').value=c.valor;document.getElementById('c-data').value=c.data;document.getElementById('c-forn').value=c.forn||'';}
+    if(c){
+      document.getElementById('c-id').value=c.id;
+      document.getElementById('c-motor').value=c.motorId;
+      document.getElementById('c-qty').value=c.qty;
+      document.getElementById('c-valor').value=c.valor;
+      document.getElementById('c-data').value=c.data;
+      document.getElementById('c-forn').value=c.forn||'';
+      const ls=locaisDoLancamento(c,getMotorById(c.motorId));
+      compraLocaisTemp=ls.map(x=>({local:x.local===SEM_LOCAL?'':x.local,qty:x.qty}));
+    }
   }
+  renderLocaisEditor('compra');
   abrirModal('modal-compra');
 }
 
@@ -1574,15 +2033,19 @@ function salvarCompra(){
   const data=document.getElementById('c-data').value;
   const forn=document.getElementById('c-forn').value;
   if(!motorId||!qty||!valor||!data){showToast('Preencha todos os campos obrigatórios','error');return;}
+  const res=coletarLocais('compra',qty);
+  if(res.erro){showToast(res.erro,'error');return;}
+  const locais=res.locais;
   const compras=DB.get('compras');
   const existingId=parseInt(document.getElementById('c-id').value);
   if(existingId){
     const idx=compras.findIndex(c=>c.id===existingId);
-    if(idx>-1) compras[idx]={...compras[idx],motorId,qty,valor,data,forn};
+    if(idx>-1) compras[idx]={...compras[idx],motorId,qty,valor,data,forn,locais};
     showToast('Compra atualizada!');
   } else {
-    compras.push({id:nextId('compraNextId'),motorId,qty,valor,data,forn,tipo:'compra'});
-    showToast(`Compra registrada — ${qty} un. adicionada(s)!`);
+    compras.push({id:nextId('compraNextId'),motorId,qty,valor,data,forn,locais,tipo:'compra'});
+    const resumo=locais.map(l=>`${l.qty} em ${l.local}`).join(', ');
+    showToast(`Compra registrada — ${resumo}`);
   }
   DB.set('compras',compras);
   fecharModal('modal-compra');
@@ -1606,16 +2069,18 @@ function renderCompra(){
   document.getElementById('compra-filters').innerHTML=buildFiltersHTML('compra');
   let compras=filterByMotor(filterByDate(DB.get('compras'),'data')).reverse();
   const el=document.getElementById('tabela-compras');
-  if(!compras.length){el.innerHTML='<div class="empty-state"><div class="empty-icon">📥</div>Nenhuma compra registrada.<br>Clique em <strong>+ Nova Compra</strong>.</div>';return;}
-  el.innerHTML=`<table><thead><tr><th>Motor</th><th>Qtd</th><th>Valor Unit.</th><th>Total</th><th>Data</th><th>Fornecedor</th><th>Tipo</th><th>Ações</th></tr></thead><tbody>
+  if(!compras.length){el.innerHTML='<div class="empty-state"><div class="empty-icon">📥</div>Nenhuma compra encontrada.<br>Clique em <strong>+ Nova Compra</strong>.</div>';return;}
+  el.innerHTML=`<table><thead><tr><th>Motor</th><th>Qtd</th><th>Local</th><th>Valor Unit.</th><th>Total</th><th>Data</th><th>Fornecedor</th><th>Tipo</th><th>Ações</th></tr></thead><tbody>
     ${compras.map(c=>{
       const m=getMotorById(c.motorId);
       const isAcerto=c.tipo==='acerto';
       return `<tr>
-        <td>${m?`<strong>${m.marca}</strong> ${m.cv}CV ${m.volt}`:'—'}</td>
-        <td>${c.qty}</td><td>${fmt(c.valor)}</td><td>${fmt(c.valor*c.qty)}</td>
+        <td>${m?`<strong>${esc(m.marca)}</strong> ${m.cv}CV ${m.polos?m.polos+'P ':''}${esc(m.volt)}${m.modelo?' '+esc(m.modelo):''}`:'—'}</td>
+        <td>${c.qty}</td>
+        <td>${chipsLocais(locaisDoLancamento(c,m))}</td>
+        <td>${fmt(c.valor)}</td><td>${fmt(c.valor*c.qty)}</td>
         <td>${fmtDate(c.data)}</td>
-        <td style="color:var(--muted);font-size:12px">${c.forn||'—'}</td>
+        <td style="color:var(--muted);font-size:12px">${esc(c.forn)||'—'}</td>
         <td>${isAcerto?`<span class="acerto-badge">⚖️ Acerto</span>`:`<span class="badge blue">Compra</span>`}</td>
         <td><div class="td-actions">
           ${!isAcerto?`<button class="btn-edit-sm" onclick="abrirModalCompra(${c.id})">✏️</button>`:''}
@@ -1633,18 +2098,32 @@ function abrirModalVenda(id){
   document.getElementById('modal-venda-title').textContent=id?'Editar Venda':'Nova Venda';
   document.getElementById('v-id').value='';
   const motores=DB.get('motores');
-  document.getElementById('v-motor').innerHTML=motores.map(m=>`<option value="${m.id}">${motorLabel(m)}</option>`).join('');
+  document.getElementById('v-motor').innerHTML=motores.map(m=>`<option value="${m.id}">${esc(motorLabel(m))}</option>`).join('');
   document.getElementById('v-qty').value='';
   document.getElementById('v-valor').value='';
   document.getElementById('v-data').value=new Date().toISOString().split('T')[0];
   document.getElementById('v-cliente').value='';
   document.getElementById('v-resumo').style.display='none';
+  vendaLocaisTemp=[];
   if(id){
     const v=DB.get('vendas').find(x=>x.id===id);
-    if(v){document.getElementById('v-id').value=v.id;document.getElementById('v-motor').value=v.motorId;document.getElementById('v-qty').value=v.qty;document.getElementById('v-valor').value=v.valorVenda;document.getElementById('v-data').value=v.data;document.getElementById('v-cliente').value=v.cliente||'';}
+    if(v){
+      document.getElementById('v-id').value=v.id;
+      document.getElementById('v-motor').value=v.motorId;
+      document.getElementById('v-qty').value=v.qty;
+      document.getElementById('v-valor').value=v.valorVenda;
+      document.getElementById('v-data').value=v.data;
+      document.getElementById('v-cliente').value=v.cliente||'';
+      vendaLocaisTemp=locaisDoLancamento(v,getMotorById(v.motorId)).map(x=>({local:x.local===SEM_LOCAL?'':x.local,qty:x.qty}));
+    }
   }
   atualizarInfoVenda();
   abrirModal('modal-venda');
+}
+
+function onChangeMotorVenda(){
+  vendaLocaisTemp=[]; // ao trocar o motor a distribuição por local é refeita
+  atualizarInfoVenda();
 }
 
 function atualizarInfoVenda(){
@@ -1655,6 +2134,12 @@ function atualizarInfoVenda(){
   document.getElementById('v-pm-label').textContent=fmt(pm);
   document.getElementById('v-est-label').textContent=est+' un.';
   document.getElementById('venda-info-box').style.display='block';
+  // Sugere automaticamente o local com mais saldo
+  if(!vendaLocaisTemp.length){
+    const disp=locaisComSaldo(motorId,vendaLocaisDevolvidos());
+    vendaLocaisTemp=[{local:disp.length?disp[0].local:'',qty:qtyTotalCtx('venda')}];
+  }
+  renderLocaisEditor('venda');
   calcVendaResumo();
 }
 
@@ -1674,6 +2159,16 @@ function calcVendaResumo(){
   } else r.style.display='none';
 }
 
+// Confere se cada local tem saldo para a quantidade que está saindo
+function validarLocaisVenda(motorId,locais){
+  const disponivel=new Map(locaisComSaldo(motorId,vendaLocaisDevolvidos()).map(x=>[x.local,x.qty]));
+  for(const l of locais){
+    const tem=disponivel.get(l.local)||0;
+    if(l.qty>tem) return `Saldo insuficiente em ${l.local}: disponível ${tem} un., solicitado ${l.qty} un.`;
+  }
+  return null;
+}
+
 function salvarVenda(){
   const motorId=parseInt(document.getElementById('v-motor').value);
   const qty=parseInt(document.getElementById('v-qty').value);
@@ -1681,20 +2176,25 @@ function salvarVenda(){
   const data=document.getElementById('v-data').value;
   const cliente=document.getElementById('v-cliente').value;
   if(!motorId||!qty||!valorVenda||!data){showToast('Preencha todos os campos obrigatórios','error');return;}
+  const res=coletarLocais('venda',qty);
+  if(res.erro){showToast(res.erro,'error');return;}
+  const locais=res.locais;
+  const erroLocal=validarLocaisVenda(motorId,locais);
+  if(erroLocal){showToast(erroLocal,'error');return;}
   const existingId=parseInt(document.getElementById('v-id').value);
   const vendas=DB.get('vendas');
   if(existingId){
     const vOld=vendas.find(v=>v.id===existingId);
-    const estDisp=estoqueAtualMotor(motorId)+( vOld?.qty||0);
+    const estDisp=estoqueAtualMotor(motorId)+((vOld&&vOld.motorId===motorId)?vOld.qty:0);
     if(qty>estDisp){showToast(`Estoque insuficiente! Disponível: ${estDisp} un.`,'error');return;}
     const idx=vendas.findIndex(v=>v.id===existingId);
-    if(idx>-1) vendas[idx]={...vendas[idx],motorId,qty,valorVenda,precoMedio:precoMedioMotor(motorId),data,cliente};
+    if(idx>-1) vendas[idx]={...vendas[idx],motorId,qty,valorVenda,precoMedio:precoMedioMotor(motorId),data,cliente,locais};
     showToast('Venda atualizada!');
   } else {
     const estDisp=estoqueAtualMotor(motorId);
     if(qty>estDisp){showToast(`Estoque insuficiente! Disponível: ${estDisp} un.`,'error');return;}
-    vendas.push({id:nextId('vendaNextId'),motorId,qty,valorVenda,precoMedio:precoMedioMotor(motorId),data,cliente,tipo:'venda'});
-    showToast(`Venda registrada — ${qty} un. saíram!`);
+    vendas.push({id:nextId('vendaNextId'),motorId,qty,valorVenda,precoMedio:precoMedioMotor(motorId),data,cliente,locais,tipo:'venda'});
+    showToast(`Venda registrada — ${locais.map(l=>`${l.qty} de ${l.local}`).join(', ')}`);
   }
   DB.set('vendas',vendas);
   fecharModal('modal-venda');
@@ -1715,8 +2215,8 @@ function renderVenda(){
   document.getElementById('venda-filters').innerHTML=buildFiltersHTML('venda');
   let vendas=filterByMotor(filterByDate(DB.get('vendas'),'data')).reverse();
   const el=document.getElementById('tabela-vendas');
-  if(!vendas.length){el.innerHTML='<div class="empty-state"><div class="empty-icon">📤</div>Nenhuma venda registrada.<br>Clique em <strong>+ Nova Venda</strong>.</div>';return;}
-  el.innerHTML=`<table><thead><tr><th>Motor</th><th>Qtd</th><th>Preço Médio</th><th>Val. Venda</th><th>Lucro</th><th>Data</th><th>Cliente</th><th>Tipo</th><th>Ações</th></tr></thead><tbody>
+  if(!vendas.length){el.innerHTML='<div class="empty-state"><div class="empty-icon">📤</div>Nenhuma venda encontrada.<br>Clique em <strong>+ Nova Venda</strong>.</div>';return;}
+  el.innerHTML=`<table><thead><tr><th>Motor</th><th>Qtd</th><th>Local (baixa)</th><th>Preço Médio</th><th>Val. Venda</th><th>Lucro</th><th>Data</th><th>Cliente</th><th>Tipo</th><th>Ações</th></tr></thead><tbody>
     ${vendas.map(v=>{
       const m=getMotorById(v.motorId);
       const lucro=(v.valorVenda-v.precoMedio)*v.qty;
@@ -1725,11 +2225,13 @@ function renderVenda(){
         v.origemOrcamento?`<span class="badge blue" title="Venda gerada automaticamente ao aprovar o ${v.origemOrcamento}">📄 ${v.origemOrcamento}</span>`:
         `<span class="badge blue">Venda</span>`;
       return `<tr>
-        <td>${m?`<strong>${m.marca}</strong> ${m.cv}CV ${m.volt}`:'—'}</td>
-        <td>${v.qty}</td><td>${fmt(v.precoMedio)}</td><td>${fmt(v.valorVenda)}</td>
+        <td>${m?`<strong>${esc(m.marca)}</strong> ${m.cv}CV ${m.polos?m.polos+'P ':''}${esc(m.volt)}${m.modelo?' '+esc(m.modelo):''}`:'—'}</td>
+        <td>${v.qty}</td>
+        <td>${chipsLocais(locaisDoLancamento(v,m))}</td>
+        <td>${fmt(v.precoMedio)}</td><td>${fmt(v.valorVenda)}</td>
         <td><span class="badge ${lucro>=0?'green':'red'}">${lucro>=0?'+':''}${fmt(lucro)}</span></td>
         <td>${fmtDate(v.data)}</td>
-        <td style="color:var(--muted);font-size:12px">${v.cliente||'—'}</td>
+        <td style="color:var(--muted);font-size:12px">${esc(v.cliente)||'—'}</td>
         <td>${tipoBadge}</td>
         <td><div class="td-actions">
           ${!isAcerto?`<button class="btn-edit-sm" onclick="abrirModalVenda(${v.id})">✏️</button>`:''}
@@ -1746,7 +2248,7 @@ function renderVenda(){
 function abrirModalAcerto(){
   const motores=DB.get('motores');
   if(!motores.length){showToast('Cadastre motores primeiro','error');return;}
-  document.getElementById('a-motor').innerHTML=motores.map(m=>`<option value="${m.id}">${motorLabel(m)}</option>`).join('');
+  document.getElementById('a-motor').innerHTML=motores.map(m=>`<option value="${m.id}">${esc(motorLabel(m))}</option>`).join('');
   document.getElementById('a-qty').value='';
   document.getElementById('a-data').value=new Date().toISOString().split('T')[0];
   document.getElementById('a-motivo').value='';
@@ -1798,12 +2300,16 @@ function salvarAcerto(){
   if(diff===0){showToast('Estoque já está correto, nenhum ajuste feito','warning');fecharModal('modal-acerto');return;}
   const pm=precoMedioMotor(motorId)||0;
   if(diff>0){
+    // Entrada de acerto vai para o local com mais saldo (ou "sem local" se não houver nenhum)
+    const disp=locaisComSaldo(motorId);
+    const destino=disp.length?disp[0].local:SEM_LOCAL;
     const compras=DB.get('compras');
-    compras.push({id:nextId('compraNextId'),motorId,qty:diff,valor:pm||0,data,forn:motivo,tipo:'acerto'});
+    compras.push({id:nextId('compraNextId'),motorId,qty:diff,valor:pm||0,data,forn:motivo,locais:[{local:destino,qty:diff}],tipo:'acerto'});
     DB.set('compras',compras);
   } else {
     const vendas=DB.get('vendas');
-    vendas.push({id:nextId('vendaNextId'),motorId,qty:Math.abs(diff),valorVenda:pm||0,precoMedio:pm||0,data,cliente:motivo,tipo:'acerto'});
+    vendas.push({id:nextId('vendaNextId'),motorId,qty:Math.abs(diff),valorVenda:pm||0,precoMedio:pm||0,data,cliente:motivo,
+      locais:alocarAutomatico(motorId,Math.abs(diff)),tipo:'acerto'});
     DB.set('vendas',vendas);
   }
   fecharModal('modal-acerto');
@@ -1814,14 +2320,11 @@ function salvarAcerto(){
 function renderEstoque(){
   document.getElementById('estoque-filters').innerHTML=buildFiltersHTML('estoque');
   const f=activeFilters;
-  let motores=DB.get('motores');
-  if(f.cv) motores=motores.filter(m=>String(m.cv)===String(f.cv));
-  if(f.volt) motores=motores.filter(m=>m.volt===f.volt);
-  if(f.marca) motores=motores.filter(m=>m.marca===f.marca);
+  let motores=filterMotores(DB.get('motores'));
   const el=document.getElementById('tabela-estoque');
   if(!motores.length){el.innerHTML='<div class="empty-state"><div class="empty-icon">📦</div>Nenhum motor encontrado com os filtros aplicados.</div>';return;}
   el.innerHTML=`<table><thead><tr>
-    <th>Marca</th><th>CV</th><th>Polos</th><th>Voltagem</th><th>Modelo</th><th>Local</th>
+    <th>Marca</th><th>CV</th><th>Polos</th><th>Voltagem</th><th>Modelo</th><th>Locais (qtd)</th>
     <th>Entradas</th><th>Saídas</th><th>Saldo</th>
     <th>Preço Médio</th><th>Valor Total</th><th>Status</th><th>Ações</th>
   </tr></thead><tbody>
@@ -1831,12 +2334,18 @@ function renderEstoque(){
       const min=m.estoqueMinimo!==undefined&&m.estoqueMinimo!==null?m.estoqueMinimo:3;
       const e=(m.saldoInicial||0)+DB.get('compras').filter(c=>c.motorId===m.id).reduce((s,c)=>s+c.qty,0);
       const s=DB.get('vendas').filter(v=>v.motorId===m.id).reduce((s,v)=>s+v.qty,0);
+      let locais=locaisComSaldo(m.id);
+      if(f.local) locais=locais.filter(l=>l.local===f.local);
       return `<tr>
-        <td><strong>${m.marca}</strong></td><td>${m.cv} CV</td><td>${m.polos?m.polos+'P':'—'}</td><td>${m.volt}</td><td>${m.modelo||'—'}</td><td>${m.local||'—'}</td>
+        <td><strong>${esc(m.marca)}</strong></td><td>${m.cv} CV</td><td>${m.polos?m.polos+'P':'—'}</td><td>${esc(m.volt)}</td><td>${esc(m.modelo)||'—'}</td>
+        <td>${chipsLocais(locais)}</td>
         <td>${e}</td><td>${s}</td><td><strong>${est}</strong></td>
         <td>${fmt(pm)}</td><td>${fmt(pm*est)}</td>
         <td>${est<=0?'<span class="badge red">Zerado</span>':est<=min?'<span class="badge yellow">Baixo</span>':'<span class="badge green">OK</span>'}</td>
-        <td><button class="btn-edit-sm" onclick="abrirModalAcertoMotor(${m.id})">⚖️ Acerto</button></td>
+        <td><div class="td-actions">
+          <button class="btn-edit-sm" onclick="abrirModalAcertoMotor(${m.id})">⚖️ Acerto</button>
+          <button class="btn-edit-sm" onclick="abrirModalTransferencia(${m.id})">🔄 Transferir</button>
+        </div></td>
       </tr>`;
     }).join('')}
   </tbody></table>`;
@@ -1851,64 +2360,101 @@ function abrirModalAcertoMotor(motorId){
 }
 
 // ══════════════════════════════════════════════════════════
-//  TRANSFERÊNCIA DE ESTOQUE (Local)
+//  TRANSFERÊNCIA DE ESTOQUE (movimenta quantidades entre locais)
 // ══════════════════════════════════════════════════════════
 function renderTransferencia(){
   document.getElementById('transferencia-filters').innerHTML=buildFiltersHTML('transferencia');
   const f=activeFilters;
-  let motores=DB.get('motores');
-  if(f.cv) motores=motores.filter(m=>String(m.cv)===String(f.cv));
-  if(f.volt) motores=motores.filter(m=>m.volt===f.volt);
-  if(f.marca) motores=motores.filter(m=>m.marca===f.marca);
-  const locais=getOpcoes('local');
+  const motores=filterMotores(DB.get('motores'));
   const el=document.getElementById('tabela-transferencia');
-  if(!motores.length){
-    el.innerHTML='<div class="empty-state"><div class="empty-icon">🔄</div>Nenhum motor encontrado com os filtros aplicados.</div>';
+  const linhas=[];
+  motores.forEach(m=>{
+    let locais=locaisComSaldo(m.id);
+    if(f.local) locais=locais.filter(l=>l.local===f.local);
+    if(!locais.length&&!f.local) locais=[{local:SEM_LOCAL,qty:0}];
+    locais.forEach(l=>linhas.push({m,...l}));
+  });
+  if(!linhas.length){
+    el.innerHTML='<div class="empty-state"><div class="empty-icon">🔄</div>Nenhum estoque encontrado com os filtros aplicados.</div>';
   } else {
     el.innerHTML=`<table><thead><tr>
-      <th>Marca</th><th>CV</th><th>Polos</th><th>Voltagem</th><th>Modelo</th><th>Estoque</th><th>Local Atual</th><th>Transferir Para</th>
+      <th>Marca</th><th>CV</th><th>Polos</th><th>Voltagem</th><th>Modelo</th><th>Local</th><th>Qtd no local</th><th>Ações</th>
     </tr></thead><tbody>
-      ${motores.map(m=>{
-        const est=estoqueAtualMotor(m.id);
-        return `<tr>
-          <td><strong>${m.marca}</strong></td><td>${m.cv} CV</td><td>${m.polos?m.polos+'P':'—'}</td><td>${m.volt}</td><td>${m.modelo||'—'}</td>
-          <td>${est} un.</td>
-          <td>${m.local?m.local:'<span style="color:var(--muted)">Não definido</span>'}</td>
-          <td>
-            <select onchange="transferirLocal(${m.id},this.value)">
-              <option value="">Selecione o novo local</option>
-              ${locais.map(l=>`<option value="${l}" ${m.local===l?'selected':''}>${l}</option>`).join('')}
-            </select>
-          </td>
-        </tr>`;
-      }).join('')}
+      ${linhas.map(l=>`<tr>
+        <td><strong>${esc(l.m.marca)}</strong></td><td>${l.m.cv} CV</td><td>${l.m.polos?l.m.polos+'P':'—'}</td>
+        <td>${esc(l.m.volt)}</td><td>${esc(l.m.modelo)||'—'}</td>
+        <td><span class="local-chip">${esc(l.local)}</span></td>
+        <td><strong>${l.qty}</strong> un.</td>
+        <td><button class="btn-edit-sm" ${l.qty<=0?'disabled style="opacity:.4;cursor:not-allowed"':''}
+            onclick="abrirModalTransferencia(${l.m.id},'${esc(String(l.local).replace(/'/g,"\\'"))}')">🔄 Transferir</button></td>
+      </tr>`).join('')}
     </tbody></table>`;
   }
   renderHistoricoTransferencias();
 }
 
-function transferirLocal(motorId,novoLocal){
-  if(!novoLocal) return;
+function abrirModalTransferencia(motorId,localOrigem){
   const motores=DB.get('motores');
-  const idx=motores.findIndex(m=>m.id===motorId);
-  if(idx===-1) return;
-  const localAnterior=motores[idx].local||'';
-  if(localAnterior===novoLocal) return;
-  motores[idx]={...motores[idx],local:novoLocal};
-  DB.set('motores',motores);
+  if(!motores.length){showToast('Cadastre motores primeiro','error');return;}
+  document.getElementById('t-motor').innerHTML=motores.map(m=>`<option value="${m.id}">${esc(motorLabel(m))}</option>`).join('');
+  if(motorId) document.getElementById('t-motor').value=motorId;
+  document.getElementById('t-qty').value='';
+  atualizarLocaisTransferencia(localOrigem);
+  abrirModal('modal-transferencia');
+}
 
+function atualizarLocaisTransferencia(localOrigem){
+  const motorId=parseInt(document.getElementById('t-motor').value);
+  const disp=locaisComSaldo(motorId);
+  const origem=document.getElementById('t-origem');
+  origem.innerHTML=disp.length
+    ? disp.map(l=>`<option value="${esc(l.local)}"${(localOrigem&&localOrigem===l.local)?' selected':''}>${esc(l.local)} — ${l.qty} un.</option>`).join('')
+    : '<option value="">Sem estoque disponível</option>';
+  const destinos=[...new Set([...todosLocais(),SEM_LOCAL])];
+  const destino=document.getElementById('t-destino');
+  destino.innerHTML=destinos.map(l=>`<option value="${esc(l)}">${esc(l)}</option>`).join('')
+    +'<option value="__novo__">➕ Cadastrar novo local...</option>';
+  destino.onchange=()=>{
+    if(destino.value==='__novo__'){destino.value=destinos[0]||'';abrirModalAddOpcao('local','t-destino');}
+  };
+  atualizarInfoTransferencia();
+}
+
+function atualizarInfoTransferencia(){
+  const motorId=parseInt(document.getElementById('t-motor').value);
+  const origem=document.getElementById('t-origem').value;
+  const qty=parseInt(document.getElementById('t-qty').value)||0;
+  const el=document.getElementById('t-info');
+  const disp=(locaisComSaldo(motorId).find(l=>l.local===origem)||{qty:0}).qty;
+  el.style.display='block';
+  if(qty>disp){
+    el.style.background='#D4000010';el.style.border='1px solid #D4000030';el.style.color='var(--accent)';
+    el.innerHTML=`⚠️ O local <strong>${esc(origem||'—')}</strong> tem apenas <strong>${disp} un.</strong> disponíveis.`;
+  } else {
+    el.style.background='#3b82f610';el.style.border='1px solid #3b82f630';el.style.color='var(--blue)';
+    el.innerHTML=`Disponível em <strong>${esc(origem||'—')}</strong>: <strong>${disp} un.</strong>`;
+  }
+}
+
+function salvarTransferencia(){
+  const motorId=parseInt(document.getElementById('t-motor').value);
+  const de=document.getElementById('t-origem').value;
+  const para=document.getElementById('t-destino').value;
+  const qty=parseInt(document.getElementById('t-qty').value);
+  if(!motorId||!de||!para||!qty||qty<=0){showToast('Preencha motor, origem, destino e quantidade','error');return;}
+  if(de===para){showToast('Origem e destino são o mesmo local','warning');return;}
+  const disp=(locaisComSaldo(motorId).find(l=>l.local===de)||{qty:0}).qty;
+  if(qty>disp){showToast(`Saldo insuficiente em ${de}: ${disp} un. disponíveis`,'error');return;}
   const transferencias=DB.get('transferencias');
   transferencias.push({
     id:nextId('transferenciaNextId'),
-    motorId,
-    de:localAnterior||'(sem local definido)',
-    para:novoLocal,
+    motorId,de,para,qty,
     data:new Date().toISOString(),
     usuario:usuarioLogado?usuarioLogado.usuario:'—',
   });
   DB.set('transferencias',transferencias);
-
-  showToast('Local atualizado!');
+  fecharModal('modal-transferencia');
+  showToast(`${qty} un. transferida(s) de ${de} para ${para}!`);
   renderTransferencia();
 }
 
@@ -1917,18 +2463,198 @@ function renderHistoricoTransferencias(){
   if(!el) return;
   const transferencias=[...DB.get('transferencias')].sort((a,b)=>new Date(b.data)-new Date(a.data)).slice(0,30);
   if(!transferencias.length){el.innerHTML='<div class="empty-state"><div class="empty-icon">📜</div>Nenhuma transferência registrada ainda.</div>';return;}
-  el.innerHTML=`<table><thead><tr><th>Data</th><th>Motor</th><th>De</th><th>Para</th><th>Usuário</th></tr></thead><tbody>
+  el.innerHTML=`<table><thead><tr><th>Data</th><th>Motor</th><th>Qtd</th><th>De</th><th>Para</th><th>Usuário</th></tr></thead><tbody>
     ${transferencias.map(t=>{
       const m=getMotorById(t.motorId);
+      const qty=parseInt(t.qty)||0;
       return `<tr>
         <td>${new Date(t.data).toLocaleString('pt-BR')}</td>
-        <td>${m?motorLabel(m):'Motor removido'}</td>
-        <td>${t.de}</td>
-        <td><strong>${t.para}</strong></td>
-        <td>${t.usuario||'—'}</td>
+        <td>${m?esc(motorLabel(m)):'Motor removido'}</td>
+        <td>${qty?qty+' un.':'<span class="badge gray">local alterado</span>'}</td>
+        <td>${esc(t.de)}</td>
+        <td><strong>${esc(t.para)}</strong></td>
+        <td>${esc(t.usuario)||'—'}</td>
       </tr>`;
     }).join('')}
   </tbody></table>`;
+}
+
+// ══════════════════════════════════════════════════════════
+//  AVISOS / SOLICITAÇÕES DE CLIENTES
+// ══════════════════════════════════════════════════════════
+const AVISO_STATUS={
+  pendente:{label:'Pendente',badge:'yellow'},
+  atendido:{label:'Atendido',badge:'green'},
+  cancelado:{label:'Cancelado',badge:'gray'},
+};
+
+function abrirModalAviso(id){
+  document.getElementById('modal-aviso-title').textContent=id?'Editar Solicitação':'Nova Solicitação';
+  document.getElementById('av-id').value='';
+  const motores=DB.get('motores');
+  document.getElementById('av-motor').innerHTML='<option value="">— Não cadastrado / descrever abaixo —</option>'
+    +motores.map(m=>`<option value="${m.id}">${esc(motorLabel(m))}</option>`).join('');
+  document.getElementById('av-clientes-list').innerHTML=DB.get('clientes').map(c=>`<option value="${esc(c.nome)}"></option>`).join('');
+  document.getElementById('av-cliente').value='';
+  document.getElementById('av-contato').value='';
+  document.getElementById('av-desc').value='';
+  document.getElementById('av-qty').value='1';
+  document.getElementById('av-data').value=new Date().toISOString().split('T')[0];
+  document.getElementById('av-prazo').value='';
+  document.getElementById('av-status').value='pendente';
+  document.getElementById('av-obs').value='';
+  if(id){
+    const a=DB.get('avisos').find(x=>x.id===id);
+    if(a){
+      document.getElementById('av-id').value=a.id;
+      document.getElementById('av-cliente').value=a.cliente||'';
+      document.getElementById('av-contato').value=a.contato||'';
+      document.getElementById('av-motor').value=a.motorId||'';
+      document.getElementById('av-desc').value=a.descricao||'';
+      document.getElementById('av-qty').value=a.qty||1;
+      document.getElementById('av-data').value=a.data||'';
+      document.getElementById('av-prazo').value=a.prazo||'';
+      document.getElementById('av-status').value=a.status||'pendente';
+      document.getElementById('av-obs').value=a.obs||'';
+    }
+  }
+  atualizarInfoAviso();
+  abrirModal('modal-aviso');
+}
+
+function atualizarInfoAviso(){
+  const motorId=parseInt(document.getElementById('av-motor').value);
+  const box=document.getElementById('av-info-box');
+  if(!motorId){box.style.display='none';return;}
+  const est=estoqueAtualMotor(motorId);
+  const locais=locaisComSaldo(motorId);
+  const el=document.getElementById('av-est-label');
+  el.textContent=est+' un.'+(locais.length?' ('+locais.map(l=>`${l.local}: ${l.qty}`).join(' | ')+')':'');
+  el.style.color=est>0?'var(--green)':'var(--accent)';
+  box.style.display='block';
+}
+
+function salvarAviso(){
+  const cliente=document.getElementById('av-cliente').value.trim();
+  const contato=document.getElementById('av-contato').value.trim();
+  const motorIdRaw=document.getElementById('av-motor').value;
+  const motorId=motorIdRaw?parseInt(motorIdRaw):null;
+  const descricao=document.getElementById('av-desc').value.trim();
+  const qty=parseInt(document.getElementById('av-qty').value)||1;
+  const data=document.getElementById('av-data').value;
+  const prazo=document.getElementById('av-prazo').value;
+  const status=document.getElementById('av-status').value;
+  const obs=document.getElementById('av-obs').value.trim();
+  if(!cliente){showToast('Informe o cliente que solicitou','error');return;}
+  if(!motorId&&!descricao){showToast('Escolha o motor cadastrado ou descreva o produto solicitado','error');return;}
+  if(!data){showToast('Informe a data da solicitação','error');return;}
+  const avisos=DB.get('avisos');
+  const existingId=parseInt(document.getElementById('av-id').value);
+  if(existingId){
+    const idx=avisos.findIndex(a=>a.id===existingId);
+    if(idx>-1) avisos[idx]={...avisos[idx],cliente,contato,motorId,descricao,qty,data,prazo,status,obs};
+    showToast('Solicitação atualizada!');
+  } else {
+    avisos.push({id:nextId('avisoNextId'),cliente,contato,motorId,descricao,qty,data,prazo,status,obs,
+      criadoEm:new Date().toISOString(),usuario:usuarioLogado?usuarioLogado.usuario:'—'});
+    showToast('Solicitação registrada!');
+  }
+  DB.set('avisos',avisos);
+  fecharModal('modal-aviso');
+  renderAvisos();
+}
+
+function mudarStatusAviso(id,status){
+  const avisos=DB.get('avisos');
+  const idx=avisos.findIndex(a=>a.id===id);
+  if(idx===-1) return;
+  avisos[idx].status=status;
+  DB.set('avisos',avisos);
+  showToast(`Solicitação marcada como ${AVISO_STATUS[status]?.label||status}`);
+  renderAvisos();
+}
+
+function deletarAviso(id){
+  const a=DB.get('avisos').find(x=>x.id===id);
+  confirmar('Excluir Solicitação',`Excluir a solicitação de ${a?.cliente||'cliente'}?`,()=>{
+    DB.set('avisos',DB.get('avisos').filter(x=>x.id!==id));
+    showToast('Solicitação excluída','warning');
+    renderAvisos();
+  });
+}
+
+// Quantidade em estoque hoje para a solicitação (só quando o motor está cadastrado)
+function disponibilidadeAviso(a){
+  if(!a.motorId) return null;
+  const est=estoqueAtualMotor(a.motorId);
+  return {est,atende:est>=(a.qty||1)};
+}
+
+function avisosPendentesDisponiveis(){
+  return DB.get('avisos').filter(a=>(a.status||'pendente')==='pendente'&&disponibilidadeAviso(a)?.atende);
+}
+
+function atualizarBadgeAvisos(){
+  const el=document.getElementById('nav-avisos-badge');
+  if(!el) return;
+  const n=DB.get('avisos').filter(a=>(a.status||'pendente')==='pendente').length;
+  el.textContent=n;
+  el.style.display=n?'inline-block':'none';
+}
+
+function renderAvisos(){
+  const filtro=document.getElementById('avisos-filtro-status')?.value ?? 'pendente';
+  let avisos=[...DB.get('avisos')].sort((a,b)=>String(b.data||'').localeCompare(String(a.data||'')));
+  const total=avisos.length;
+  const pendentes=avisos.filter(a=>(a.status||'pendente')==='pendente');
+  const disponiveis=pendentes.filter(a=>disponibilidadeAviso(a)?.atende);
+
+  document.getElementById('avisos-cards').innerHTML=`
+    <div class="stat-card c-red"><div class="lbl">Solicitações Pendentes</div><div class="val">${pendentes.length}</div><div class="sub">aguardando compra/atendimento</div><div class="ci">🔔</div></div>
+    <div class="stat-card c-green"><div class="lbl">Já Disponíveis em Estoque</div><div class="val">${disponiveis.length}</div><div class="sub">pode avisar o cliente</div><div class="ci">✅</div></div>
+    <div class="stat-card c-blue"><div class="lbl">Unidades Solicitadas</div><div class="val">${pendentes.reduce((s,a)=>s+(a.qty||1),0)}</div><div class="sub">somando as pendentes</div><div class="ci">📦</div></div>
+    <div class="stat-card c-dark"><div class="lbl">Total Registrado</div><div class="val">${total}</div><div class="sub">todas as solicitações</div><div class="ci">📋</div></div>`;
+
+  if(filtro==='disponivel') avisos=disponiveis;
+  else if(filtro) avisos=avisos.filter(a=>(a.status||'pendente')===filtro);
+
+  const el=document.getElementById('tabela-avisos');
+  if(!avisos.length){
+    el.innerHTML='<div class="empty-state"><div class="empty-icon">🔔</div>Nenhuma solicitação nesta situação.<br>Clique em <strong>+ Nova Solicitação</strong> para registrar o pedido de um cliente.</div>';
+    atualizarBadgeAvisos();
+    return;
+  }
+  el.innerHTML=`<table><thead><tr>
+    <th>Data</th><th>Cliente</th><th>Contato</th><th>Produto solicitado</th><th>Qtd</th>
+    <th>Estoque hoje</th><th>Prazo</th><th>Situação</th><th>Obs.</th><th>Ações</th>
+  </tr></thead><tbody>
+    ${avisos.map(a=>{
+      const m=a.motorId?getMotorById(a.motorId):null;
+      const disp=disponibilidadeAviso(a);
+      const st=AVISO_STATUS[a.status||'pendente']||AVISO_STATUS.pendente;
+      const estCel=disp===null
+        ?'<span style="color:var(--muted)">—</span>'
+        :`<span class="badge ${disp.atende?'green':'red'}">${disp.est} un.${disp.atende?' ✓':''}</span>`;
+      return `<tr>
+        <td>${fmtDate(a.data)}</td>
+        <td><strong>${esc(a.cliente)}</strong></td>
+        <td style="color:var(--muted);font-size:12px">${esc(a.contato)||'—'}</td>
+        <td>${m?esc(motorLabel(m)):`<span style="color:var(--muted)">${esc(a.descricao)||'—'}</span>`}</td>
+        <td>${a.qty||1}</td>
+        <td>${estCel}</td>
+        <td>${a.prazo?fmtDate(a.prazo):'—'}</td>
+        <td><span class="badge ${st.badge}">${st.label}</span></td>
+        <td style="color:var(--muted);font-size:12px">${esc(a.obs)||'—'}</td>
+        <td><div class="td-actions">
+          ${(a.status||'pendente')==='pendente'?`<button class="btn-green-sm" title="Marcar como atendido" onclick="mudarStatusAviso(${a.id},'atendido')">✅</button>`:''}
+          ${(a.status||'pendente')==='pendente'?`<button class="btn-edit-sm" title="Cancelar solicitação" onclick="mudarStatusAviso(${a.id},'cancelado')">🚫</button>`:`<button class="btn-edit-sm" title="Reabrir" onclick="mudarStatusAviso(${a.id},'pendente')">↩️</button>`}
+          <button class="btn-edit-sm" onclick="abrirModalAviso(${a.id})">✏️</button>
+          <button class="btn-danger-sm" onclick="deletarAviso(${a.id})">🗑</button>
+        </div></td>
+      </tr>`;
+    }).join('')}
+  </tbody></table>`;
+  atualizarBadgeAvisos();
 }
 
 // ══════════════════════════════════════════════════════════
@@ -2757,9 +3483,11 @@ function gerarVendaDeOrcamento(orcId){
       id,motorId:it.motorId,qty:it.qty,valorVenda:it.valorUnit,
       precoMedio:precoMedioMotor(it.motorId),
       data:new Date().toISOString().split('T')[0],
+      locais:alocarAutomatico(it.motorId,it.qty),
       cliente:cliente?cliente.nome:'',tipo:'venda',origemOrcamento:orc.numero
     });
     novosIds.push(id);
+    DB.set('vendas',vendas); // grava a cada item para o próximo cálculo de local já considerar a baixa
   });
   DB.set('vendas',vendas);
   const orcamentos=DB.get('orcamentos');
