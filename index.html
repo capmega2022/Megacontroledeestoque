@@ -1446,56 +1446,55 @@ function buildFiltersHTML(page){
   const locais=todosLocais();
   const f=activeFilters;
   const extras=PAGINAS_FILTRO_COMPLETO.includes(page)?`
-    <div class="filter-group"><label>Polos</label><select id="flt-polos">
+    <div class="filter-group"><label>Polos</label><select id="flt-polos-${page}" onchange="applyFilters('${page}')">
       <option value="">Todos</option>${polos.map(p=>`<option value="${p}"${f.polos==p?' selected':''}>${p}P</option>`).join('')}
     </select></div>
-    <div class="filter-group"><label>Modelo</label><select id="flt-modelo">
+    <div class="filter-group"><label>Modelo</label><select id="flt-modelo-${page}" onchange="applyFilters('${page}')">
       <option value="">Todos</option>${modelos.map(mo=>`<option value="${esc(mo)}"${f.modelo===mo?' selected':''}>${esc(mo)}</option>`).join('')}
     </select></div>
-    <div class="filter-group"><label>Local de Estoque</label><select id="flt-local">
+    <div class="filter-group"><label>Local de Estoque</label><select id="flt-local-${page}" onchange="applyFilters('${page}')">
       <option value="">Todos</option>${locais.map(l=>`<option value="${esc(l)}"${f.local===l?' selected':''}>${esc(l)}</option>`).join('')}
     </select></div>
-    <div class="filter-group"><label>Estoque</label><select id="flt-situacao">
+    <div class="filter-group"><label>Estoque</label><select id="flt-situacao-${page}" onchange="applyFilters('${page}')">
       <option value="">Todos</option>
       <option value="com"${f.situacao==='com'?' selected':''}>Com estoque</option>
       <option value="baixo"${f.situacao==='baixo'?' selected':''}>Estoque baixo</option>
       <option value="sem"${f.situacao==='sem'?' selected':''}>Sem estoque</option>
     </select></div>`:'';
   return `
-    <div class="filter-group"><label>Ano</label><select id="flt-ano">
+    <div class="filter-group"><label>Ano</label><select id="flt-ano-${page}" onchange="applyFilters('${page}')">
       <option value="">Todos</option>${[2024,2025,2026].map(y=>`<option value="${y}"${f.ano==y?' selected':''}>${y}</option>`).join('')}
     </select></div>
-    <div class="filter-group"><label>Mês</label><select id="flt-mes">
+    <div class="filter-group"><label>Mês</label><select id="flt-mes-${page}" onchange="applyFilters('${page}')">
       <option value="">Todos</option>${['Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez'].map((m,i)=>`<option value="${i+1}"${f.mes==i+1?' selected':''}>${m}</option>`).join('')}
     </select></div>
-    <div class="filter-group"><label>Dia</label><input type="number" id="flt-dia" min="1" max="31" placeholder="DD" value="${f.dia||''}"></div>
-    <div class="filter-group"><label>CV</label><select id="flt-cv">
+    <div class="filter-group"><label>Dia</label><input type="number" id="flt-dia-${page}" min="1" max="31" placeholder="DD" value="${f.dia||''}" onchange="applyFilters('${page}')"></div>
+    <div class="filter-group"><label>CV</label><select id="flt-cv-${page}" onchange="applyFilters('${page}')">
       <option value="">Todos</option>${cvs.map(c=>`<option value="${c}"${f.cv==c?' selected':''}>${c} CV</option>`).join('')}
     </select></div>
-    <div class="filter-group"><label>Voltagem</label><select id="flt-volt">
+    <div class="filter-group"><label>Voltagem</label><select id="flt-volt-${page}" onchange="applyFilters('${page}')">
       <option value="">Todas</option>${volts.map(v=>`<option value="${esc(v)}"${f.volt===v?' selected':''}>${esc(v)}</option>`).join('')}
     </select></div>
-    <div class="filter-group"><label>Marca</label><select id="flt-marca">
+    <div class="filter-group"><label>Marca</label><select id="flt-marca-${page}" onchange="applyFilters('${page}')">
       <option value="">Todas</option>${marcas.map(m=>`<option value="${esc(m)}"${f.marca===m?' selected':''}>${esc(m)}</option>`).join('')}
     </select></div>
     ${extras}
     <div style="display:flex;gap:8px;align-items:flex-end">
-      <button class="btn btn-red" style="padding:8px 16px" onclick="applyFilters('${page}')">Filtrar</button>
       <button class="btn btn-ghost" style="padding:8px 14px" onclick="clearFilters('${page}')">Limpar</button>
     </div>`;
 }
 function applyFilters(page){
   activeFilters={
-    ano:document.getElementById('flt-ano')?.value||'',
-    mes:document.getElementById('flt-mes')?.value||'',
-    dia:document.getElementById('flt-dia')?.value||'',
-    cv:document.getElementById('flt-cv')?.value||'',
-    volt:document.getElementById('flt-volt')?.value||'',
-    marca:document.getElementById('flt-marca')?.value||'',
-    polos:document.getElementById('flt-polos')?.value||'',
-    modelo:document.getElementById('flt-modelo')?.value||'',
-    local:document.getElementById('flt-local')?.value||'',
-    situacao:document.getElementById('flt-situacao')?.value||'',
+    ano:document.getElementById('flt-ano-'+page)?.value||'',
+    mes:document.getElementById('flt-mes-'+page)?.value||'',
+    dia:document.getElementById('flt-dia-'+page)?.value||'',
+    cv:document.getElementById('flt-cv-'+page)?.value||'',
+    volt:document.getElementById('flt-volt-'+page)?.value||'',
+    marca:document.getElementById('flt-marca-'+page)?.value||'',
+    polos:document.getElementById('flt-polos-'+page)?.value||'',
+    modelo:document.getElementById('flt-modelo-'+page)?.value||'',
+    local:document.getElementById('flt-local-'+page)?.value||'',
+    situacao:document.getElementById('flt-situacao-'+page)?.value||'',
   };
   renderPage(page);
 }
