@@ -3242,17 +3242,23 @@ async function alternarAcessoUsuario(id){
     bloquear?`Bloquear o acesso de ${conta.usuario}? A conta continua existindo no Supabase, mas não conseguirá entrar no sistema.`
             :`Liberar novamente o acesso de ${conta.usuario}?`,
     async()=>{
+      // Liberar uma conta sem nenhuma tela marcada deixaria ela "ativa" mas sem
+      // conseguir entrar — então já entra com o Dashboard liberado.
+      let permissoes=conta.permissoes||[];
+      let semTelas=false;
+      if(!bloquear&&!permissoes.length){ permissoes=['dashboard']; semTelas=true; }
       if(contasApp){
-        const ok=await atualizarContaApp(id,{perfil:conta.perfil,permissoes:conta.permissoes||[],ativo:!bloquear});
+        const ok=await atualizarContaApp(id,{perfil:conta.perfil,permissoes,ativo:!bloquear});
         if(!ok){showToast('Não foi possível alterar. Verifique se você tem permissão de administrador.','error');return;}
       } else {
         const usuarios=DB.get('usuarios');
         const idx=usuarios.findIndex(u=>String(u.id)===String(id));
         if(idx<0) return;
-        usuarios[idx]={...usuarios[idx],ativo:!bloquear};
+        usuarios[idx]={...usuarios[idx],permissoes,ativo:!bloquear};
         DB.set('usuarios',usuarios);
       }
-      showToast(bloquear?'Acesso bloqueado':'Acesso liberado',bloquear?'warning':'success');
+      showToast(bloquear?'Acesso bloqueado':(semTelas?'Acesso liberado apenas ao Dashboard — ajuste as telas em ✏️ Permissões':'Acesso liberado'),
+                bloquear?'warning':(semTelas?'warning':'success'));
       await recarregarContasApp(true);
     });
 }
@@ -3275,7 +3281,8 @@ function renderUsuarios(){
       const perfilClasse=(u.perfil||'').toLowerCase().includes('admin')?'admin':(u.perfil||'').toLowerCase().includes('venda')?'vendas':'';
       const telas=(u.permissoes||[]).map(k=>PAGINAS_APP.find(p=>p.key===k)?.label||k);
       const ativo=u.ativo!==false;
-      const idAttr=JSON.stringify(String(u.id));
+      // id entre aspas simples: aspas duplas encerrariam o atributo onclick
+      const idAttr="'"+String(u.id).replace(/'/g,"\\'")+"'";
       return `<tr>
         <td><strong>${esc(u.usuario)}</strong>${usuarioLogado&&String(usuarioLogado.id)===String(u.id)?' <span style="color:var(--muted);font-size:11px">(você)</span>':''}</td>
         <td><span class="perfil-badge ${perfilClasse}">${esc(u.perfil)||'—'}</span></td>
