@@ -214,6 +214,42 @@ document.documentElement.style.setProperty("--logo-mega",'url("'+window.LOGO_MEG
   .field input,.field select{background:var(--surface2);border:1px solid var(--border);
     border-radius:var(--radius-sm);color:var(--text);padding:10px 12px;font-size:14px;outline:none;transition:border .2s;}
   .field input:focus,.field select:focus{border-color:var(--accent);}
+  /* SELETOR DE MOTOR COM BUSCA */
+  .motor-picker{display:flex;flex-direction:column;gap:6px;}
+  .motor-picker-tools{display:flex;gap:6px;flex-wrap:wrap;}
+  .motor-picker-tools .motor-busca{flex:1 1 200px;min-width:0;background:var(--surface2);
+    border:1px solid var(--border);border-radius:var(--radius-sm);color:var(--text);
+    padding:9px 12px;font-size:13px;outline:none;transition:border .2s;}
+  .motor-picker-tools .motor-busca:focus{border-color:var(--accent);}
+  .motor-picker-tools .motor-ordem{flex:0 0 auto;background:var(--surface2);border:1px solid var(--border);
+    border-radius:var(--radius-sm);color:var(--text);padding:9px 10px;font-size:12px;font-weight:600;
+    outline:none;cursor:pointer;transition:border .2s;}
+  .motor-picker-tools .motor-ordem:focus{border-color:var(--accent);}
+  .motor-picker select.motor-lista{background:var(--surface2);border:1px solid var(--border);
+    border-radius:var(--radius-sm);color:var(--text);padding:6px;font-size:13.5px;outline:none;transition:border .2s;}
+  .motor-picker select.motor-lista:focus{border-color:var(--accent);}
+  .motor-picker select.motor-lista option{padding:5px 7px;border-radius:4px;color:var(--text);}
+  .motor-picker select.motor-lista option:checked,
+  .motor-picker select.motor-lista option:hover{
+    background:var(--accent);color:#fff;
+    background-image:linear-gradient(0deg,var(--accent) 0%,var(--accent) 100%);}
+  .motor-picker-info{font-size:11px;color:var(--muted);font-weight:600;}
+  .motor-picker-foot{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;}
+  .btn-selecionar-motor{background:var(--accent);border:none;color:#fff;border-radius:var(--radius-sm);
+    padding:8px 14px;font-size:12.5px;font-weight:700;cursor:pointer;transition:filter .18s;white-space:nowrap;}
+  .btn-selecionar-motor:hover{filter:brightness(1.12);}
+  .motor-card{border-radius:var(--radius-sm);padding:12px 14px;border:1px solid var(--border);
+    background:var(--surface2);display:flex;flex-direction:column;gap:6px;}
+  .motor-card.vazio{border:1px dashed var(--border);color:var(--muted);font-size:12.5px;}
+  .motor-card.ok{border:1px solid var(--accent);background:#D4000012;}
+  .motor-card-head{display:flex;align-items:center;justify-content:space-between;gap:10px;}
+  .motor-card-badge{font-size:10px;font-weight:800;letter-spacing:.9px;color:var(--accent);text-transform:uppercase;}
+  .motor-card-nome{font-size:15px;font-weight:700;color:var(--text);line-height:1.35;}
+  .motor-card-meta{font-size:11.5px;color:var(--muted);}
+  .btn-trocar-motor{background:none;border:1px solid var(--border);color:var(--muted);border-radius:6px;
+    padding:4px 10px;font-size:11.5px;font-weight:700;cursor:pointer;transition:all .18s;white-space:nowrap;}
+  .btn-trocar-motor:hover{border-color:var(--accent);color:var(--accent);}
+
   .select-add-wrap{display:flex;gap:6px;}
   .select-add-wrap select{flex:1;min-width:0;}
   .select-add-btn{flex-shrink:0;width:38px;background:var(--surface2);border:1px solid var(--border);
@@ -350,7 +386,7 @@ document.documentElement.style.setProperty("--logo-mega",'url("'+window.LOGO_MEG
         <button class="eye-btn" id="eyeBtn" onclick="toggleEye()">👁️</button>
       </div></div>
     <div class="checkbox-row">
-      <input type="checkbox" id="rememberMe"><label for="rememberMe">Lembrar senha</label></div>
+      <input type="checkbox" id="rememberMe"><label for="rememberMe">Lembrar meu e-mail</label></div>
     <button class="btn-login" id="loginBtn" onclick="doLogin()">ENTRAR</button>
     <button type="button" class="login-footer-link" onclick="abrirModalPrivacidade()">Política de Privacidade</button>
   </div>
@@ -467,7 +503,10 @@ document.documentElement.style.setProperty("--logo-mega",'url("'+window.LOGO_MEG
     <div id="page-estoque" class="page" style="display:none">
       <div class="page-header">
         <div class="page-header-left"><h1>Estoque Atual</h1><p>Posição atual de todos os motores</p></div>
-        <button class="btn btn-blue" onclick="abrirModalAcerto()">⚖️ Acerto de Estoque</button>
+        <div style="display:flex;gap:10px;flex-wrap:wrap">
+          <button class="btn btn-red" onclick="gerarPDFEstoque()">🖨️ Imprimir PDF</button>
+          <button class="btn btn-blue" onclick="abrirModalAcerto()">⚖️ Acerto de Estoque</button>
+        </div>
       </div>
       <div class="filters-bar" id="estoque-filters"></div>
       <div class="table-card">
@@ -605,11 +644,17 @@ document.documentElement.style.setProperty("--logo-mega",'url("'+window.LOGO_MEG
     <!-- USUÁRIOS -->
     <div id="page-usuarios" class="page" style="display:none">
       <div class="page-header">
-        <div class="page-header-left"><h1>Usuários</h1><p>Cadastro de usuários e permissões de acesso por tela</p></div>
-        <button class="btn btn-red" onclick="abrirModalUsuario()">✚ Novo Usuário</button>
+        <div class="page-header-left"><h1>Usuários</h1><p>Permissões de acesso das contas cadastradas no Supabase</p></div>
+        <button class="btn btn-blue" onclick="recarregarContasApp()">🔄 Atualizar lista</button>
+      </div>
+      <div class="info-box" style="margin-bottom:16px;border-left:3px solid var(--accent)">
+        🔒 <strong>Contas de acesso são criadas apenas no Supabase</strong> (Authentication → Users).
+        Este sistema não cria logins. Aqui você apenas define o <strong>perfil</strong>, as <strong>telas permitidas</strong>
+        e se a conta está <strong>ativa</strong>. Uma conta recém-criada no Supabase entra como <em>sem acesso</em> até
+        um administrador liberar as telas nesta página.
       </div>
       <div class="table-card">
-        <div class="table-header"><h3>Usuários Cadastrados</h3></div>
+        <div class="table-header"><h3>Contas com Acesso ao Sistema</h3></div>
         <div id="tabela-usuarios"></div>
       </div>
     </div>
@@ -731,7 +776,27 @@ document.documentElement.style.setProperty("--logo-mega",'url("'+window.LOGO_MEG
     </div>
     <div class="form-grid">
       <input type="hidden" id="c-id">
-      <div class="field full"><label>Motor</label><select id="c-motor"></select></div>
+      <div class="field full"><label>Motor</label>
+        <div class="motor-picker" id="c-motor-picker">
+          <div class="motor-picker-tools">
+            <input type="text" id="c-motor-busca" class="motor-busca" autocomplete="off"
+              placeholder="🔎 Buscar por nome: marca, CV, polos, voltagem ou modelo…"
+              oninput="filtrarSelectMotor('c-motor')"
+              onkeydown="if(event.key==='Enter'){event.preventDefault();confirmarMotorSelecionado('c');}">
+            <select id="c-motor-ordem" class="motor-ordem" onchange="filtrarSelectMotor('c-motor')">
+              <option value="cv">Ordenar por CV ↑</option>
+              <option value="nome">Ordenar por Nome (A–Z)</option>
+            </select>
+          </div>
+          <select id="c-motor" class="motor-lista" size="6" ondblclick="confirmarMotorSelecionado('c')"></select>
+          <div class="motor-picker-foot">
+            <div class="motor-picker-info" id="c-motor-info"></div>
+            <button type="button" class="btn-selecionar-motor" onclick="confirmarMotorSelecionado('c')">✔ Selecionar este motor</button>
+          </div>
+        </div>
+        <input type="hidden" id="c-motor-sel">
+        <div class="motor-card vazio" id="c-motor-card"></div>
+      </div>
       <div class="field"><label>Quantidade</label><input type="number" id="c-qty" placeholder="1" min="1" oninput="onQtyCompraChange()"></div>
       <div class="field"><label>Valor de Compra (R$)</label><input type="number" id="c-valor" placeholder="0,00" step="0.01" min="0"></div>
       <div class="field"><label>Data</label><input type="date" id="c-data"></div>
@@ -766,7 +831,26 @@ document.documentElement.style.setProperty("--logo-mega",'url("'+window.LOGO_MEG
     <div class="form-grid">
       <input type="hidden" id="v-id">
       <div class="field full"><label>Motor</label>
-        <select id="v-motor" onchange="onChangeMotorVenda()"></select></div>
+        <div class="motor-picker" id="v-motor-picker">
+          <div class="motor-picker-tools">
+            <input type="text" id="v-motor-busca" class="motor-busca" autocomplete="off"
+              placeholder="🔎 Buscar por nome: marca, CV, polos, voltagem ou modelo…"
+              oninput="filtrarSelectMotor('v-motor')"
+              onkeydown="if(event.key==='Enter'){event.preventDefault();confirmarMotorSelecionado('v');}">
+            <select id="v-motor-ordem" class="motor-ordem" onchange="filtrarSelectMotor('v-motor')">
+              <option value="cv">Ordenar por CV ↑</option>
+              <option value="nome">Ordenar por Nome (A–Z)</option>
+            </select>
+          </div>
+          <select id="v-motor" class="motor-lista" size="6" ondblclick="confirmarMotorSelecionado('v')"></select>
+          <div class="motor-picker-foot">
+            <div class="motor-picker-info" id="v-motor-info"></div>
+            <button type="button" class="btn-selecionar-motor" onclick="confirmarMotorSelecionado('v')">✔ Selecionar este motor</button>
+          </div>
+        </div>
+        <input type="hidden" id="v-motor-sel">
+        <div class="motor-card vazio" id="v-motor-card"></div>
+      </div>
       <div id="venda-info-box" class="info-box full" style="display:none">
         <div class="info-row"><span class="info-lbl">Preço médio de compra</span><span class="info-val" id="v-pm-label" style="color:var(--accent)">—</span></div>
         <div class="info-row"><span class="info-lbl">Estoque disponível</span><span class="info-val" id="v-est-label" style="color:var(--green)">—</span></div>
@@ -1040,17 +1124,23 @@ document.documentElement.style.setProperty("--logo-mega",'url("'+window.LOGO_MEG
 <div id="modal-usuario" class="modal-overlay" style="display:none" onclick="fecharModalSe(event,'modal-usuario')">
   <div class="modal-box wide">
     <div class="modal-header">
-      <h2 id="modal-usuario-title">Novo Usuário</h2>
+      <h2 id="modal-usuario-title">Permissões de Acesso</h2>
       <button class="modal-close" onclick="fecharModal('modal-usuario')">✕</button>
     </div>
     <input type="hidden" id="usr-id">
     <div class="form-grid">
-      <div class="field full"><label>E-mail (login do Supabase)</label><input type="email" id="usr-usuario" placeholder="ex: joao@empresa.com"></div>
-      <div class="field full"><label>Perfil</label><input type="text" id="usr-perfil" placeholder="ex: Administrador, Vendas, Financeiro..."></div>
+      <div class="field full"><label>E-mail (conta do Supabase)</label>
+        <input type="email" id="usr-usuario" readonly style="opacity:.75;cursor:not-allowed"></div>
+      <div class="field"><label>Perfil</label><input type="text" id="usr-perfil" placeholder="ex: Administrador, Vendas, Financeiro..."></div>
+      <div class="field"><label>Situação da conta</label>
+        <select id="usr-ativo">
+          <option value="1">✅ Ativa — pode entrar no sistema</option>
+          <option value="0">⛔ Bloqueada — acesso negado</option>
+        </select></div>
     </div>
     <p style="font-size:12px;color:var(--muted);margin-top:2px;line-height:1.5">
-      ℹ️ A senha não é definida aqui. Crie ou gerencie a conta deste e-mail em
-      <strong>Supabase → Authentication → Users</strong>. Aqui você só define o perfil e as telas que essa pessoa pode acessar.
+      ℹ️ O login e a senha existem somente no <strong>Supabase → Authentication → Users</strong>.
+      Esta tela não cria nem apaga contas: define apenas o perfil, a situação e as telas que a pessoa pode acessar.
     </p>
 
     <div style="margin-top:10px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px">
@@ -1064,7 +1154,7 @@ document.documentElement.style.setProperty("--logo-mega",'url("'+window.LOGO_MEG
 
     <div class="modal-footer">
       <button class="btn btn-ghost" onclick="fecharModal('modal-usuario')">Cancelar</button>
-      <button class="btn btn-red" onclick="salvarUsuario()">💾 Salvar Usuário</button>
+      <button class="btn btn-red" onclick="salvarUsuario()">💾 Salvar Permissões</button>
     </div>
   </div>
 </div>
@@ -1249,7 +1339,9 @@ function migrarPermissoesUsuarios(){
 
 function usuarioPodeAcessar(pagina){
   if(!usuarioLogado) return false;
-  if(!usuarioLogado.permissoes||!usuarioLogado.permissoes.length) return true; // fallback de segurança contra dado corrompido
+  if(usuarioLogado.ativo===false) return false;
+  // Sem permissão explícita = sem acesso (padrão "negar por omissão")
+  if(!Array.isArray(usuarioLogado.permissoes)||!usuarioLogado.permissoes.length) return false;
   return usuarioLogado.permissoes.includes(pagina);
 }
 
@@ -1262,41 +1354,120 @@ function aplicarPermissoesNav(){
 
 // ══════════════════════════════════════════════════════════
 //  AUTH  (login oficial via Supabase Auth)
+//  Regra de segurança: NADA é carregado da nuvem antes da autenticação.
+//  Os dados só descem do Supabase depois que a sessão é validada e a conta
+//  está liberada na tabela usuarios_app.
 // ══════════════════════════════════════════════════════════
+
+// Contas autorizadas vindas do Supabase (tabela usuarios_app).
+// null = tabela ainda não criada → modo legado com a lista local.
+let contasApp=null;
+
+async function carregarContasApp(){
+  if(!supa){contasApp=null;return null;}
+  try{
+    const { data,error }=await supa.from('usuarios_app').select('id,email,perfil,permissoes,ativo').order('email');
+    if(error) throw error;
+    contasApp=(data||[]).map(r=>({
+      id:r.id, usuario:r.email, perfil:r.perfil||'Sem acesso',
+      permissoes:Array.isArray(r.permissoes)?r.permissoes:[], ativo:r.ativo===true, remoto:true
+    }));
+    return contasApp;
+  }catch(e){
+    console.warn('Tabela usuarios_app indisponível — usando controle de acesso local.',e);
+    contasApp=null;
+    return null;
+  }
+}
+
+async function atualizarContaApp(id,dados){
+  if(!supa) return false;
+  try{
+    const { error }=await supa.from('usuarios_app')
+      .update({perfil:dados.perfil,permissoes:dados.permissoes,ativo:dados.ativo,atualizado_em:new Date().toISOString()})
+      .eq('id',id);
+    if(error) throw error;
+    return true;
+  }catch(e){ console.warn('Falha ao atualizar conta',e); return false; }
+}
+
+// Lista usada pela tela de Usuários: contas do Supabase ou, se a tabela ainda
+// não existir, a lista local antiga.
+function listaContas(){
+  if(contasApp) return contasApp;
+  return DB.get('usuarios').map(u=>({...u,ativo:u.ativo!==false}));
+}
+function contaPorId(id){ return listaContas().find(c=>String(c.id)===String(id))||null; }
+
+// ── Sessão ────────────────────────────────────────────────
+const SESSAO_INATIVIDADE_MIN=30; // encerra a sessão após 30 min sem uso
+let timerInatividade=null;
+
+function reiniciarTimerInatividade(){
+  if(timerInatividade) clearTimeout(timerInatividade);
+  if(!usuarioLogado) return;
+  timerInatividade=setTimeout(async()=>{
+    if(!usuarioLogado) return;
+    showToast('Sessão encerrada por inatividade. Faça login novamente.','warning');
+    await doLogout();
+  },SESSAO_INATIVIDADE_MIN*60*1000);
+}
+['click','keydown','mousemove','touchstart'].forEach(ev=>
+  document.addEventListener(ev,()=>{ if(usuarioLogado) reiniciarTimerInatividade(); },{passive:true}));
+
+// Apaga o cache local de dados da empresa (usado no logout, para não deixar
+// informação acessível a quem usar o mesmo computador depois).
+function limparCacheLocal(){
+  Object.keys(localStorage).filter(k=>k.startsWith('ms_')&&!['ms_theme','ms_savedLogin'].includes(k))
+    .forEach(k=>localStorage.removeItem(k));
+}
+
 window.onload=async()=>{
   const savedTheme=localStorage.getItem('ms_theme')||'dark';
   document.documentElement.setAttribute('data-theme',savedTheme);
   document.getElementById('themeToggleBtn').textContent=savedTheme==='light'?'☀️':'🌙';
 
+  // Compatibilidade: remove senhas gravadas em versões anteriores do sistema
+  const savedAntigo=DB.getObj('savedLogin',null);
+  if(savedAntigo&&savedAntigo.pass){ DB.setObj('savedLogin',{user:savedAntigo.user}); }
+  const saved=DB.getObj('savedLogin',null);
+  if(saved&&saved.user){
+    document.getElementById('loginUser').value=saved.user;
+    document.getElementById('rememberMe').checked=true;
+  }
+
   const loginBtn=document.getElementById('loginBtn');
+  if(!supa){
+    if(loginBtn){loginBtn.disabled=true;loginBtn.textContent='SEM CONEXÃO';}
+    showToast('Não foi possível conectar ao Supabase. Verifique sua internet e recarregue a página.','error');
+    return;
+  }
   if(loginBtn){loginBtn.disabled=true;loginBtn.textContent='CARREGANDO...';}
+  const { data }=await supa.auth.getSession();
+  if(loginBtn){loginBtn.disabled=false;loginBtn.textContent='ENTRAR';}
+  if(data&&data.session&&data.session.user&&data.session.user.email){
+    await iniciarSessao(data.session.user.email);
+  }
+  supa.auth.onAuthStateChange((event)=>{
+    if(event==='SIGNED_OUT'){
+      usuarioLogado=null;
+      if(timerInatividade) clearTimeout(timerInatividade);
+      document.getElementById('app').style.display='none';
+      document.getElementById('loginPage').style.display='flex';
+    }
+  });
+};
+
+// Só aqui os dados descem da nuvem — depois de autenticado.
+async function iniciarSessao(email){
   await carregarDoSupabase();
   initClean();
   seedUsuariosPadrao();
   garantirAdminPadrao();
   sanitizarUsuariosLegado();
   migrarPermissoesUsuarios();
-  if(loginBtn){loginBtn.disabled=false;loginBtn.textContent='ENTRAR';}
-
-  const saved=DB.getObj('savedLogin',null);
-  if(saved){document.getElementById('loginUser').value=saved.user;document.getElementById('loginPass').value=saved.pass;document.getElementById('rememberMe').checked=true;}
-
-  if(!supa){
-    showToast('Não foi possível conectar ao Supabase. Verifique sua internet e recarregue a página.','error');
-    return;
-  }
-  const { data }=await supa.auth.getSession();
-  if(data&&data.session&&data.session.user&&data.session.user.email){
-    await openApp(data.session.user.email);
-  }
-  supa.auth.onAuthStateChange((event)=>{
-    if(event==='SIGNED_OUT'){
-      usuarioLogado=null;
-      document.getElementById('app').style.display='none';
-      document.getElementById('loginPage').style.display='flex';
-    }
-  });
-};
+  await openApp(email);
+}
 // Avisa no login quando alguma solicitação de cliente já pode ser atendida com o estoque atual
 function avisarSolicitacoesDisponiveis(){
   if(!usuarioPodeAcessar('avisos')) return;
@@ -1327,37 +1498,68 @@ async function doLogin(){
     showToast('E-mail ou senha inválidos','error');
     return;
   }
-  if(document.getElementById('rememberMe').checked) DB.setObj('savedLogin',{user:email,pass:senha});
+  // Segurança: a senha NUNCA é gravada no navegador — apenas o e-mail, se pedido.
+  if(document.getElementById('rememberMe').checked) DB.setObj('savedLogin',{user:email});
   else localStorage.removeItem('ms_savedLogin');
-  await openApp(data.user.email);
+  document.getElementById('loginPass').value='';
+  await iniciarSessao(data.user.email);
 }
 async function doLogout(){
+  const online=cloudOnline;
   if(supa) await supa.auth.signOut().catch(()=>{});
   usuarioLogado=null;
+  contasApp=null;
+  if(timerInatividade) clearTimeout(timerInatividade);
+  // Só limpa o cache se os dados já estiverem salvos na nuvem
+  if(online) limparCacheLocal();
   document.getElementById('app').style.display='none';
   document.getElementById('loginPage').style.display='flex';
+  document.getElementById('loginPass').value='';
 }
 async function openApp(email){
-  const usuarios=DB.get('usuarios');
-  const usuarioLocal=usuarios.find(us=>(us.usuario||'').toLowerCase()===email.toLowerCase());
-  if(!usuarioLocal){
-    showToast('Seu e-mail ainda não tem permissões cadastradas neste sistema. Peça a um administrador para te cadastrar em Usuários.','error');
-    if(supa) await supa.auth.signOut().catch(()=>{});
+  // 1) Conta precisa existir no Supabase (já garantido pelo login) E estar
+  //    liberada na tabela de contas autorizadas.
+  await carregarContasApp();
+  let conta=null;
+  if(contasApp){
+    conta=contasApp.find(c=>(c.usuario||'').toLowerCase()===email.toLowerCase());
+  } else {
+    conta=DB.get('usuarios').map(u=>({...u,ativo:u.ativo!==false}))
+      .find(us=>(us.usuario||'').toLowerCase()===email.toLowerCase());
+  }
+  if(!conta){
+    showToast('Esta conta ainda não tem acesso liberado neste sistema. Peça a um administrador para liberar em Usuários.','error');
+    await negarAcesso();
     return;
   }
-  usuarioLogado=usuarioLocal;
+  if(conta.ativo===false||!(conta.permissoes||[]).length){
+    showToast('Acesso bloqueado para esta conta. Procure um administrador do sistema.','error');
+    await negarAcesso();
+    return;
+  }
+  usuarioLogado=conta;
+  reiniciarTimerInatividade();
   document.getElementById('loginPage').style.display='none';
   document.getElementById('app').style.display='flex';
   const nomeBase=email.split('@')[0];
   const n=nomeBase.charAt(0).toUpperCase()+nomeBase.slice(1);
   document.getElementById('sidebarUser').textContent=n;
   document.getElementById('userAvLetter').textContent=n.charAt(0);
-  document.getElementById('sidebarUserRole').textContent=usuarioLocal.perfil||'—';
+  document.getElementById('sidebarUserRole').textContent=conta.perfil||'—';
   aplicarPermissoesNav();
   atualizarBadgeAvisos();
   avisarSolicitacoesDisponiveis();
   const primeira=PAGINAS_APP.find(p=>usuarioPodeAcessar(p.key));
   showPage(primeira?primeira.key:'dashboard');
+}
+
+// Encerra a sessão e não deixa nenhum dado da empresa no navegador
+async function negarAcesso(){
+  usuarioLogado=null; contasApp=null;
+  limparCacheLocal();
+  if(supa) await supa.auth.signOut().catch(()=>{});
+  document.getElementById('app').style.display='none';
+  document.getElementById('loginPage').style.display='flex';
 }
 
 // ══════════════════════════════════════════════════════════
@@ -1552,6 +1754,109 @@ const fmt=v=>'R$ '+Number(v||0).toLocaleString('pt-BR',{minimumFractionDigits:2,
 const fmtDate=d=>{if(!d)return'—';const p=d.split('-');return`${p[2]}/${p[1]}/${p[0]}`;};
 const motorLabel=m=>`${m.marca} | ${m.cv} CV${m.polos?' | '+m.polos+'P':''} | ${m.volt}${m.modelo?' | '+m.modelo:''}`;
 const getMotorById=id=>DB.get('motores').find(m=>m.id===id);
+
+// ── Ordenação e busca de motores nos seletores ────────────────────────────
+const cvNum=m=>{const n=parseFloat(String(m?.cv??'').replace(',','.'));return isNaN(n)?0:n;};
+const polosNum=m=>{const n=parseFloat(String(m?.polos??'').replace(',','.'));return isNaN(n)?0:n;};
+const txtCmp=(a,b)=>String(a||'').localeCompare(String(b||''),'pt-BR',{sensitivity:'base'});
+// Padrão do sistema: ordenado por CV (menor → maior)
+function ordenarMotores(lista,ordem='cv'){
+  const arr=[...(lista||[])];
+  if(ordem==='nome'){
+    arr.sort((a,b)=>txtCmp(a.marca,b.marca)||cvNum(a)-cvNum(b)||polosNum(a)-polosNum(b)||txtCmp(a.modelo,b.modelo));
+  } else {
+    arr.sort((a,b)=>cvNum(a)-cvNum(b)||polosNum(a)-polosNum(b)||txtCmp(a.marca,b.marca)||txtCmp(a.volt,b.volt)||txtCmp(a.modelo,b.modelo));
+  }
+  return arr;
+}
+const semAcento=s=>String(s??'').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'');
+const textoBuscaMotor=m=>semAcento([m.marca,m.cv,m.cv+'cv',m.polos?m.polos+'p':'',m.volt,m.modelo,m.desc].filter(Boolean).join(' '));
+
+// Preenche/atualiza um <select> de motores aplicando a busca por nome e a ordenação escolhida.
+// Espera os ids: "<selectId>-busca" (input) e "<selectId>-ordem" (select de ordenação).
+function filtrarSelectMotor(selectId){
+  const sel=document.getElementById(selectId);
+  if(!sel) return;
+  const termo=semAcento(document.getElementById(selectId+'-busca')?.value||'').trim();
+  const ordem=document.getElementById(selectId+'-ordem')?.value||'cv';
+  const anterior=sel.value;
+  const partes=termo.split(/\s+/).filter(Boolean);
+  let lista=ordenarMotores(DB.get('motores'),ordem);
+  if(partes.length) lista=lista.filter(m=>{const t=textoBuscaMotor(m);return partes.every(p=>t.includes(p));});
+  sel.innerHTML=lista.map(m=>`<option value="${m.id}">${esc(motorLabel(m))}</option>`).join('');
+  if(anterior&&lista.some(m=>String(m.id)===String(anterior))) sel.value=anterior;
+  else if(lista.length) sel.selectedIndex=0;
+  const info=document.getElementById(selectId+'-info');
+  if(info){
+    info.textContent=!lista.length?'Nenhum motor encontrado para esta busca'
+      :`${lista.length} motor(es) — ${ordem==='nome'?'ordenado por nome':'ordenado por CV'}`;
+    info.style.color=lista.length?'var(--muted)':'var(--accent)';
+  }
+}
+
+// ── Motor efetivamente SELECIONADO (confirmado) na Compra / Venda ─────────
+// A lista acima serve só para procurar; o motor que vale é o confirmado no botão
+// "Selecionar este motor" e exibido no cartão logo abaixo.
+const motorAtual=pref=>{const v=document.getElementById(pref+'-motor-sel')?.value;return v?parseInt(v):NaN;};
+
+function confirmarMotorSelecionado(pref){
+  const sel=document.getElementById(pref+'-motor');
+  const id=parseInt(sel?.value);
+  if(!id){showToast('Nenhum motor na lista para selecionar. Ajuste a busca.','error');return;}
+  definirMotorSelecionado(pref,id);
+  showToast('Motor selecionado: '+motorLabel(getMotorById(id)));
+}
+
+function definirMotorSelecionado(pref,id,silencioso){
+  const antigo=motorAtual(pref);
+  document.getElementById(pref+'-motor-sel').value=id||'';
+  renderMotorSelecionado(pref);
+  if(pref==='v'){
+    if(antigo!==id) vendaLocaisTemp=[];
+    if(!silencioso) atualizarInfoVenda();
+  }
+}
+
+function trocarMotorSelecionado(pref){
+  document.getElementById(pref+'-motor-sel').value='';
+  const busca=document.getElementById(pref+'-motor-busca');
+  if(busca) busca.value='';
+  filtrarSelectMotor(pref+'-motor');
+  renderMotorSelecionado(pref);
+  if(pref==='v'){
+    vendaLocaisTemp=[];
+    document.getElementById('venda-info-box').style.display='none';
+    document.getElementById('v-resumo').style.display='none';
+    renderLocaisEditor('venda');
+  }
+  setTimeout(()=>document.getElementById(pref+'-motor-busca')?.focus(),60);
+}
+
+function renderMotorSelecionado(pref){
+  const card=document.getElementById(pref+'-motor-card');
+  const picker=document.getElementById(pref+'-motor-picker');
+  if(!card) return;
+  const id=motorAtual(pref);
+  const m=id?getMotorById(id):null;
+  if(!m){
+    if(picker) picker.style.display='';
+    card.className='motor-card vazio';
+    card.innerHTML='⚠️ Nenhum motor selecionado — escolha na lista acima e clique em <strong>✔ Selecionar este motor</strong> (ou dê dois cliques no item).';
+    return;
+  }
+  if(picker) picker.style.display='none';
+  const est=estoqueAtualMotor(m.id);
+  const pm=precoMedioMotor(m.id);
+  const locais=locaisComSaldo(m.id);
+  card.className='motor-card ok';
+  card.innerHTML=`
+    <div class="motor-card-head">
+      <span class="motor-card-badge">✔ Motor selecionado</span>
+      <button type="button" class="btn-trocar-motor" onclick="trocarMotorSelecionado('${pref}')">✖ Trocar motor</button>
+    </div>
+    <div class="motor-card-nome">${esc(m.marca)} · ${m.cv} CV${m.polos?' · '+m.polos+'P':''} · ${esc(m.volt)}${m.modelo?' · '+esc(m.modelo):''}</div>
+    <div class="motor-card-meta">Estoque atual: <strong>${est} un.</strong> &nbsp;·&nbsp; Preço médio: <strong>${fmt(pm)}</strong>${locais.length?' &nbsp;·&nbsp; Locais: '+locais.map(l=>esc(l.local)+' ('+l.qty+')').join(', '):''}</div>`;
+}
 const esc=v=>String(v??'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
 
 // ══════════════════════════════════════════════════════════
@@ -1870,7 +2175,7 @@ const qtyTotalCtx=ctx=>parseInt(document.getElementById(ctx==='compra'?'c-qty':'
 // Locais oferecidos no editor. Na venda mostra o saldo disponível de cada local.
 function opcoesLocaisEditor(ctx){
   if(ctx==='compra') return todosLocais().map(l=>({local:l,qty:null}));
-  const motorId=parseInt(document.getElementById('v-motor')?.value);
+  const motorId=motorAtual('v');
   if(!motorId) return [];
   return locaisComSaldo(motorId,vendaLocaisDevolvidos());
 }
@@ -1881,7 +2186,7 @@ function vendaLocaisDevolvidos(){
   if(!editId) return null;
   const v=DB.get('vendas').find(x=>x.id===editId);
   if(!v) return null;
-  const motorId=parseInt(document.getElementById('v-motor')?.value);
+  const motorId=motorAtual('v');
   if(v.motorId!==motorId) return null;
   return locaisDoLancamento(v,getMotorById(v.motorId));
 }
@@ -1987,8 +2292,11 @@ function coletarLocais(ctx,total){
 function abrirModalCompra(id){
   document.getElementById('modal-compra-title').textContent=id?'Editar Compra':'Nova Compra';
   document.getElementById('c-id').value='';
-  const motores=DB.get('motores');
-  document.getElementById('c-motor').innerHTML=motores.map(m=>`<option value="${m.id}">${esc(motorLabel(m))}</option>`).join('');
+  document.getElementById('c-motor-busca').value='';
+  document.getElementById('c-motor-ordem').value='cv';
+  document.getElementById('c-motor-sel').value='';
+  filtrarSelectMotor('c-motor');
+  renderMotorSelecionado('c');
   document.getElementById('c-qty').value='';
   document.getElementById('c-valor').value='';
   document.getElementById('c-data').value=new Date().toISOString().split('T')[0];
@@ -1999,6 +2307,7 @@ function abrirModalCompra(id){
     if(c){
       document.getElementById('c-id').value=c.id;
       document.getElementById('c-motor').value=c.motorId;
+      definirMotorSelecionado('c',c.motorId,true);
       document.getElementById('c-qty').value=c.qty;
       document.getElementById('c-valor').value=c.valor;
       document.getElementById('c-data').value=c.data;
@@ -2012,7 +2321,8 @@ function abrirModalCompra(id){
 }
 
 function salvarCompra(){
-  const motorId=parseInt(document.getElementById('c-motor').value);
+  const motorId=motorAtual('c');
+  if(!motorId){showToast('Selecione o motor na lista e clique em ✔ Selecionar este motor','error');return;}
   const qty=parseInt(document.getElementById('c-qty').value);
   const valor=parseFloat(document.getElementById('c-valor').value);
   const data=document.getElementById('c-data').value;
@@ -2082,8 +2392,12 @@ function renderCompra(){
 function abrirModalVenda(id){
   document.getElementById('modal-venda-title').textContent=id?'Editar Venda':'Nova Venda';
   document.getElementById('v-id').value='';
-  const motores=DB.get('motores');
-  document.getElementById('v-motor').innerHTML=motores.map(m=>`<option value="${m.id}">${esc(motorLabel(m))}</option>`).join('');
+  document.getElementById('v-motor-busca').value='';
+  document.getElementById('v-motor-ordem').value='cv';
+  document.getElementById('v-motor-sel').value='';
+  filtrarSelectMotor('v-motor');
+  renderMotorSelecionado('v');
+  document.getElementById('venda-info-box').style.display='none';
   document.getElementById('v-qty').value='';
   document.getElementById('v-valor').value='';
   document.getElementById('v-data').value=new Date().toISOString().split('T')[0];
@@ -2095,6 +2409,7 @@ function abrirModalVenda(id){
     if(v){
       document.getElementById('v-id').value=v.id;
       document.getElementById('v-motor').value=v.motorId;
+      definirMotorSelecionado('v',v.motorId,true);
       document.getElementById('v-qty').value=v.qty;
       document.getElementById('v-valor').value=v.valorVenda;
       document.getElementById('v-data').value=v.data;
@@ -2112,8 +2427,12 @@ function onChangeMotorVenda(){
 }
 
 function atualizarInfoVenda(){
-  const motorId=parseInt(document.getElementById('v-motor')?.value);
-  if(!motorId) return;
+  const motorId=motorAtual('v');
+  if(!motorId){
+    document.getElementById('venda-info-box').style.display='none';
+    renderLocaisEditor('venda');
+    return;
+  }
   const pm=precoMedioMotor(motorId);
   const est=estoqueAtualMotor(motorId);
   document.getElementById('v-pm-label').textContent=fmt(pm);
@@ -2129,7 +2448,7 @@ function atualizarInfoVenda(){
 }
 
 function calcVendaResumo(){
-  const motorId=parseInt(document.getElementById('v-motor')?.value);
+  const motorId=motorAtual('v');
   const qty=parseInt(document.getElementById('v-qty')?.value||0);
   const vv=parseFloat(document.getElementById('v-valor')?.value||0);
   const pm=precoMedioMotor(motorId);
@@ -2155,7 +2474,8 @@ function validarLocaisVenda(motorId,locais){
 }
 
 function salvarVenda(){
-  const motorId=parseInt(document.getElementById('v-motor').value);
+  const motorId=motorAtual('v');
+  if(!motorId){showToast('Selecione o motor na lista e clique em ✔ Selecionar este motor','error');return;}
   const qty=parseInt(document.getElementById('v-qty').value);
   const valorVenda=parseFloat(document.getElementById('v-valor').value);
   const data=document.getElementById('v-data').value;
@@ -2233,7 +2553,7 @@ function renderVenda(){
 function abrirModalAcerto(){
   const motores=DB.get('motores');
   if(!motores.length){showToast('Cadastre motores primeiro','error');return;}
-  document.getElementById('a-motor').innerHTML=motores.map(m=>`<option value="${m.id}">${esc(motorLabel(m))}</option>`).join('');
+  document.getElementById('a-motor').innerHTML=ordenarMotores(motores).map(m=>`<option value="${m.id}">${esc(motorLabel(m))}</option>`).join('');
   document.getElementById('a-qty').value='';
   document.getElementById('a-data').value=new Date().toISOString().split('T')[0];
   document.getElementById('a-motivo').value='';
@@ -2381,7 +2701,7 @@ function renderTransferencia(){
 function abrirModalTransferencia(motorId,localOrigem){
   const motores=DB.get('motores');
   if(!motores.length){showToast('Cadastre motores primeiro','error');return;}
-  document.getElementById('t-motor').innerHTML=motores.map(m=>`<option value="${m.id}">${esc(motorLabel(m))}</option>`).join('');
+  document.getElementById('t-motor').innerHTML=ordenarMotores(motores).map(m=>`<option value="${m.id}">${esc(motorLabel(m))}</option>`).join('');
   if(motorId) document.getElementById('t-motor').value=motorId;
   document.getElementById('t-qty').value='';
   atualizarLocaisTransferencia(localOrigem);
@@ -2478,7 +2798,7 @@ function abrirModalAviso(id){
   document.getElementById('av-id').value='';
   const motores=DB.get('motores');
   document.getElementById('av-motor').innerHTML='<option value="">— Não cadastrado / descrever abaixo —</option>'
-    +motores.map(m=>`<option value="${m.id}">${esc(motorLabel(m))}</option>`).join('');
+    +ordenarMotores(motores).map(m=>`<option value="${m.id}">${esc(motorLabel(m))}</option>`).join('');
   document.getElementById('av-clientes-list').innerHTML=DB.get('clientes').map(c=>`<option value="${esc(c.nome)}"></option>`).join('');
   document.getElementById('av-cliente').value='';
   document.getElementById('av-contato').value='';
@@ -2864,84 +3184,114 @@ function aplicarModeloPermissao(modelo){
 }
 
 function abrirModalUsuario(id){
-  document.getElementById('modal-usuario-title').textContent=id?'Editar Usuário':'Novo Usuário';
-  document.getElementById('usr-id').value='';
-  document.getElementById('usr-usuario').value='';
-  document.getElementById('usr-perfil').value='';
-  renderPermGrid(['dashboard']);
-
-  if(id){
-    const u=DB.get('usuarios').find(x=>x.id===id);
-    if(u){
-      document.getElementById('usr-id').value=u.id;
-      document.getElementById('usr-usuario').value=u.usuario;
-      document.getElementById('usr-perfil').value=u.perfil||'';
-      renderPermGrid(u.permissoes||[]);
-    }
-  }
+  const conta=contaPorId(id);
+  if(!conta){showToast('Conta não encontrada. Clique em "Atualizar lista".','error');return;}
+  document.getElementById('modal-usuario-title').textContent='Permissões — '+conta.usuario;
+  document.getElementById('usr-id').value=String(conta.id);
+  document.getElementById('usr-usuario').value=conta.usuario;
+  document.getElementById('usr-perfil').value=conta.perfil||'';
+  document.getElementById('usr-ativo').value=conta.ativo===false?'0':'1';
+  renderPermGrid(conta.permissoes||[]);
   abrirModal('modal-usuario');
 }
 
-function salvarUsuario(){
-  const usuario=document.getElementById('usr-usuario').value.trim().toLowerCase();
+async function salvarUsuario(){
+  const idBruto=document.getElementById('usr-id').value;
   const perfil=document.getElementById('usr-perfil').value.trim()||'Usuário';
+  const ativo=document.getElementById('usr-ativo').value==='1';
   const permissoes=[...document.querySelectorAll('#usr-perm-grid input[type=checkbox]:checked')].map(cb=>cb.dataset.perm);
+  if(!idBruto){showToast('Conta inválida','error');return;}
+  if(ativo&&!permissoes.length){showToast('Selecione ao menos uma tela ou bloqueie a conta','error');return;}
 
-  if(!usuario||!usuario.includes('@')){showToast('Informe um e-mail válido (o mesmo cadastrado no Supabase Auth)','error');return;}
-  if(!permissoes.length){showToast('Selecione ao menos uma tela de permissão','error');return;}
-
-  const usuarios=DB.get('usuarios');
-  const existingId=parseInt(document.getElementById('usr-id').value);
-  const duplicado=usuarios.find(u=>u.usuario===usuario&&u.id!==existingId);
-  if(duplicado){showToast('Já existe um usuário com esse e-mail','error');return;}
-
-  if(existingId){
-    const idx=usuarios.findIndex(u=>u.id===existingId);
-    usuarios[idx]={...usuarios[idx],usuario,perfil,permissoes};
-    showToast('Usuário atualizado!');
-    if(usuarioLogado&&usuarioLogado.id===existingId){
-      usuarioLogado=usuarios[idx];
-      document.getElementById('sidebarUserRole').textContent=usuarioLogado.perfil;
-      aplicarPermissoesNav();
-    }
+  if(contasApp){
+    const ok=await atualizarContaApp(idBruto,{perfil,permissoes,ativo});
+    if(!ok){showToast('Não foi possível salvar. Verifique se você tem permissão de administrador.','error');return;}
+    showToast('Permissões atualizadas!');
   } else {
-    usuarios.push({id:nextId('usuarioNextId'),usuario,perfil,permissoes});
-    showToast('Usuário cadastrado! Lembre-se de criar (ou já ter criado) essa conta em Supabase → Authentication → Users.');
+    const usuarios=DB.get('usuarios');
+    const idx=usuarios.findIndex(u=>String(u.id)===String(idBruto));
+    if(idx<0){showToast('Conta não encontrada','error');return;}
+    usuarios[idx]={...usuarios[idx],perfil,permissoes,ativo};
+    DB.set('usuarios',usuarios);
+    showToast('Permissões atualizadas!');
   }
-  DB.set('usuarios',usuarios);
+
+  if(usuarioLogado&&String(usuarioLogado.id)===String(idBruto)){
+    usuarioLogado={...usuarioLogado,perfil,permissoes,ativo};
+    document.getElementById('sidebarUserRole').textContent=perfil;
+    aplicarPermissoesNav();
+    if(!ativo||!permissoes.includes(currentPage)){
+      const primeira=PAGINAS_APP.find(p=>usuarioPodeAcessar(p.key));
+      showPage(primeira?primeira.key:'dashboard');
+    }
+  }
   fecharModal('modal-usuario');
-  renderUsuarios();
+  await recarregarContasApp(true);
 }
 
-function deletarUsuario(id){
-  const usuarios=DB.get('usuarios');
-  if(usuarios.length<=1){showToast('É preciso manter ao menos um usuário cadastrado.','error');return;}
-  if(usuarioLogado&&usuarioLogado.id===id){showToast('Você não pode excluir o usuário com o qual está logado.','error');return;}
-  confirmar('Remover Usuário','Tem certeza que deseja remover este usuário? Ele perderá o acesso a este sistema (a conta continua existindo no Supabase Auth até ser removida por lá também).',()=>{
-    DB.set('usuarios',DB.get('usuarios').filter(u=>u.id!==id));
-    renderUsuarios();showToast('Usuário removido','warning');
-  });
+// Bloquear/desbloquear: contas NUNCA são apagadas pelo sistema — isso é feito
+// somente no Supabase (Authentication → Users).
+async function alternarAcessoUsuario(id){
+  const conta=contaPorId(id);
+  if(!conta) return;
+  if(usuarioLogado&&String(usuarioLogado.id)===String(id)){
+    showToast('Você não pode bloquear a própria conta.','error');return;
+  }
+  const bloquear=conta.ativo!==false;
+  confirmar(bloquear?'Bloquear Acesso':'Liberar Acesso',
+    bloquear?`Bloquear o acesso de ${conta.usuario}? A conta continua existindo no Supabase, mas não conseguirá entrar no sistema.`
+            :`Liberar novamente o acesso de ${conta.usuario}?`,
+    async()=>{
+      if(contasApp){
+        const ok=await atualizarContaApp(id,{perfil:conta.perfil,permissoes:conta.permissoes||[],ativo:!bloquear});
+        if(!ok){showToast('Não foi possível alterar. Verifique se você tem permissão de administrador.','error');return;}
+      } else {
+        const usuarios=DB.get('usuarios');
+        const idx=usuarios.findIndex(u=>String(u.id)===String(id));
+        if(idx<0) return;
+        usuarios[idx]={...usuarios[idx],ativo:!bloquear};
+        DB.set('usuarios',usuarios);
+      }
+      showToast(bloquear?'Acesso bloqueado':'Acesso liberado',bloquear?'warning':'success');
+      await recarregarContasApp(true);
+    });
+}
+
+async function recarregarContasApp(silencioso){
+  await carregarContasApp();
+  renderUsuarios();
+  if(!silencioso) showToast(contasApp?`${contasApp.length} conta(s) sincronizada(s) do Supabase`:'Lista local atualizada');
 }
 
 function renderUsuarios(){
-  const usuarios=DB.get('usuarios');
+  const contas=listaContas();
   const el=document.getElementById('tabela-usuarios');
-  if(!usuarios.length){el.innerHTML='<div class="empty-state"><div class="empty-icon">🔐</div>Nenhum usuário cadastrado.</div>';return;}
-  el.innerHTML=`<table><thead><tr><th>E-mail</th><th>Perfil</th><th>Telas Permitidas</th><th>Ações</th></tr></thead><tbody>
-    ${usuarios.map(u=>{
+  if(!contas.length){
+    el.innerHTML='<div class="empty-state"><div class="empty-icon">🔐</div>Nenhuma conta encontrada.<br>Crie a conta em <strong>Supabase → Authentication → Users</strong> e clique em <strong>Atualizar lista</strong>.</div>';
+    return;
+  }
+  el.innerHTML=`<table><thead><tr><th>E-mail</th><th>Perfil</th><th>Situação</th><th>Telas Permitidas</th><th>Ações</th></tr></thead><tbody>
+    ${contas.map(u=>{
       const perfilClasse=(u.perfil||'').toLowerCase().includes('admin')?'admin':(u.perfil||'').toLowerCase().includes('venda')?'vendas':'';
       const telas=(u.permissoes||[]).map(k=>PAGINAS_APP.find(p=>p.key===k)?.label||k);
+      const ativo=u.ativo!==false;
+      const idAttr=JSON.stringify(String(u.id));
       return `<tr>
-        <td><strong>${u.usuario}</strong>${usuarioLogado&&usuarioLogado.id===u.id?' <span style="color:var(--muted);font-size:11px">(você)</span>':''}</td>
-        <td><span class="perfil-badge ${perfilClasse}">${u.perfil||'—'}</span></td>
-        <td style="font-size:11.5px;color:var(--muted)">${telas.length===PAGINAS_APP.length?'Acesso total':telas.join(', ')}</td>
+        <td><strong>${esc(u.usuario)}</strong>${usuarioLogado&&String(usuarioLogado.id)===String(u.id)?' <span style="color:var(--muted);font-size:11px">(você)</span>':''}</td>
+        <td><span class="perfil-badge ${perfilClasse}">${esc(u.perfil)||'—'}</span></td>
+        <td>${ativo?'<span class="badge green">Ativa</span>':'<span class="badge red">Bloqueada</span>'}</td>
+        <td style="font-size:11.5px;color:var(--muted)">${!telas.length?'<span style="color:var(--accent)">Sem acesso</span>':(telas.length===PAGINAS_APP.length?'Acesso total':telas.join(', '))}</td>
         <td><div class="td-actions">
-          <button class="btn-edit-sm" onclick="abrirModalUsuario(${u.id})">✏️ Editar</button>
-          <button class="btn-danger-sm" onclick="deletarUsuario(${u.id})">🗑 Remover</button>
+          <button class="btn-edit-sm" onclick="abrirModalUsuario(${idAttr})">✏️ Permissões</button>
+          <button class="${ativo?'btn-danger-sm':'btn-edit-sm'}" onclick="alternarAcessoUsuario(${idAttr})">${ativo?'⛔ Bloquear':'✅ Liberar'}</button>
         </div></td>
       </tr>`;
     }).join('')}
-  </tbody></table>`;
+  </tbody></table>
+  <div style="padding:12px 16px;font-size:11.5px;color:var(--muted);border-top:1px solid var(--border)">
+    ${contasApp?'🔒 Lista sincronizada com as contas do Supabase (tabela <strong>usuarios_app</strong>).'
+              :'⚠️ Tabela <strong>usuarios_app</strong> ainda não criada no Supabase — o sistema está usando a lista local. Execute o script <strong>politicas_seguranca_supabase.sql</strong> para ativar o controle de acesso completo.'}
+  </div>`;
 }
 
 // ══════════════════════════════════════════════════════════
@@ -3027,7 +3377,7 @@ function renderOrcItensTable(){
     tbody.innerHTML=orcItensTemp.map((it,idx)=>`
       <tr>
         <td><select class="orc-mini-input" onchange="atualizarItemOrc(${idx},'motorId',this.value)">
-          ${motores.map(m=>`<option value="${m.id}" ${m.id===it.motorId?'selected':''}>${motorLabel(m)}</option>`).join('')}
+          ${ordenarMotores(motores).map(m=>`<option value="${m.id}" ${m.id===it.motorId?'selected':''}>${motorLabel(m)}</option>`).join('')}
         </select></td>
         <td><input type="number" min="1" class="orc-mini-input" value="${it.qty}" oninput="atualizarItemOrc(${idx},'qty',this.value)"></td>
         <td><input type="number" min="0" step="0.01" class="orc-mini-input" value="${it.valorUnit}" oninput="atualizarItemOrc(${idx},'valorUnit',this.value)"></td>
@@ -3597,67 +3947,11 @@ function desenharLogoMega(doc,x,y,largura){
   catch(e){ console.warn('Não foi possível inserir a logomarca no PDF',e); }
 }
 
-// Rodapé com os telefones de contato (repetido em todas as páginas)
-function desenharRodapeOrcamento(doc,empresa){
+// Cabeçalho timbrado padrão (usado no orçamento e no relatório de estoque):
+// logo + dados da empresa à esquerda, título e informações à direita.
+// Retorna o Y onde o conteúdo pode começar.
+function desenharCabecalhoPadrao(doc,empresa,titulo,linhasDireita){
   const pageW=doc.internal.pageSize.getWidth();
-  const total=doc.getNumberOfPages();
-  const gapBloco=9;
-  for(let p=1;p<=total;p++){
-    doc.setPage(p);
-    doc.setDrawColor(212,0,0);
-    doc.setLineWidth(0.6);
-    doc.line(14,272,pageW-14,272);
-
-    // mede cada contato: nome pequeno em cima, "(47)" + número em destaque embaixo
-    const blocos=CONTATOS_ORCAMENTO.map(c=>{
-      doc.setFont('helvetica','normal'); doc.setFontSize(9);
-      const wDdd=doc.getTextWidth(c.ddd+' ');
-      const wNome=doc.getTextWidth(c.nome);
-      doc.setFont('helvetica','bold'); doc.setFontSize(13);
-      const wNum=doc.getTextWidth(c.numero);
-      return {...c,wDdd,wNum,w:Math.max(wNome,wDdd+wNum)};
-    });
-    doc.setFont('helvetica','bold'); doc.setFontSize(8);
-    const rotulo='WhatsApp';
-    const wRot=doc.getTextWidth(rotulo);
-    const larguraTotal=blocos.reduce((s,b)=>s+b.w,0)+gapBloco*(blocos.length-1)+5+wRot;
-    let x=(pageW-larguraTotal)/2;
-
-    blocos.forEach((b,i)=>{
-      doc.setFont('helvetica','normal'); doc.setFontSize(9); doc.setTextColor(90,90,90);
-      doc.text(b.nome,x,278);
-      doc.setTextColor(30,30,30);
-      doc.text(b.ddd,x,284);
-      doc.setFont('helvetica','bold'); doc.setFontSize(13);
-      doc.text(b.numero,x+b.wDdd,284);
-      x+=b.w;
-      if(i<blocos.length-1){
-        doc.setDrawColor(150,150,150); doc.setLineWidth(0.3);
-        doc.line(x+gapBloco/2,279.5,x+gapBloco/2,285);
-        x+=gapBloco;
-      }
-    });
-    doc.setFont('helvetica','bold'); doc.setFontSize(8); doc.setTextColor(37,160,80);
-    doc.text(rotulo,x+5,284);
-
-    doc.setFont('helvetica','normal'); doc.setFontSize(7); doc.setTextColor(150,150,150);
-    doc.text(`Documento gerado em ${new Date().toLocaleDateString('pt-BR')} — ${empresa.nome}`,14,291);
-    if(total>1) doc.text(`Página ${p} de ${total}`,pageW-14,291,{align:'right'});
-  }
-}
-
-function gerarPDFOrcamento(id){
-  const orc=DB.get('orcamentos').find(o=>o.id===id);
-  if(!orc){showToast('Orçamento não encontrado','error');return;}
-  if(!window.jspdf){showToast('Biblioteca de PDF não carregou. Verifique sua conexão.','error');return;}
-  const cliente=DB.get('clientes').find(c=>c.id===orc.clienteId);
-  const empresa=getEmpresa();
-  const { jsPDF }=window.jspdf;
-  const doc=new jsPDF();
-  const pageW=doc.internal.pageSize.getWidth();
-  const LIMITE_Y=266; // conteúdo não pode invadir o rodapé de contatos
-
-  // ── Cabeçalho tipo timbrado: logo + dados da empresa à esquerda, título à direita ──
   desenharLogoMega(doc,14,6,27);
   const tx=45;
   doc.setTextColor(25,25,25);
@@ -3680,19 +3974,87 @@ function gerarPDFOrcamento(id){
   doc.setTextColor(212,0,0);
   doc.setFont('helvetica','bold');
   doc.setFontSize(16);
-  doc.text('ORÇAMENTO',pageW-14,13,{align:'right'});
+  doc.text(titulo,pageW-14,13,{align:'right'});
   doc.setTextColor(30,30,30);
   doc.setFont('helvetica','normal');
   doc.setFontSize(10);
-  doc.text(`Nº ${orc.numero}`,pageW-14,19,{align:'right'});
-  doc.text(`Data: ${fmtDate(orc.data)}`,pageW-14,24.5,{align:'right'});
+  let yDir=19;
+  (linhasDireita||[]).filter(Boolean).forEach(l=>{doc.text(l,pageW-14,yDir,{align:'right'});yDir+=5.5;});
 
   doc.setDrawColor(212,0,0);
   doc.setLineWidth(0.8);
   doc.line(14,29,pageW-14,29);
-
   doc.setTextColor(30,30,30);
-  let y=38;
+  return 38;
+}
+
+// Rodapé com os telefones de contato (repetido em todas as páginas)
+function desenharRodapeOrcamento(doc,empresa){
+  const pageW=doc.internal.pageSize.getWidth();
+  const pageH=doc.internal.pageSize.getHeight();
+  const yLinha=pageH-25, yNome=pageH-19, yNum=pageH-13, yGerado=pageH-6;
+  const total=doc.getNumberOfPages();
+  const gapBloco=9;
+  for(let p=1;p<=total;p++){
+    doc.setPage(p);
+    doc.setDrawColor(212,0,0);
+    doc.setLineWidth(0.6);
+    doc.line(14,yLinha,pageW-14,yLinha);
+
+    // mede cada contato: nome pequeno em cima, "(47)" + número em destaque embaixo
+    const blocos=CONTATOS_ORCAMENTO.map(c=>{
+      doc.setFont('helvetica','normal'); doc.setFontSize(9);
+      const wDdd=doc.getTextWidth(c.ddd+' ');
+      const wNome=doc.getTextWidth(c.nome);
+      doc.setFont('helvetica','bold'); doc.setFontSize(13);
+      const wNum=doc.getTextWidth(c.numero);
+      return {...c,wDdd,wNum,w:Math.max(wNome,wDdd+wNum)};
+    });
+    doc.setFont('helvetica','bold'); doc.setFontSize(8);
+    const rotulo='WhatsApp';
+    const wRot=doc.getTextWidth(rotulo);
+    const larguraTotal=blocos.reduce((s,b)=>s+b.w,0)+gapBloco*(blocos.length-1)+5+wRot;
+    let x=(pageW-larguraTotal)/2;
+
+    blocos.forEach((b,i)=>{
+      doc.setFont('helvetica','normal'); doc.setFontSize(9); doc.setTextColor(90,90,90);
+      doc.text(b.nome,x,yNome);
+      doc.setTextColor(30,30,30);
+      doc.text(b.ddd,x,yNum);
+      doc.setFont('helvetica','bold'); doc.setFontSize(13);
+      doc.text(b.numero,x+b.wDdd,yNum);
+      x+=b.w;
+      if(i<blocos.length-1){
+        doc.setDrawColor(150,150,150); doc.setLineWidth(0.3);
+        doc.line(x+gapBloco/2,yNome+1.5,x+gapBloco/2,yNum+1);
+        x+=gapBloco;
+      }
+    });
+    doc.setFont('helvetica','bold'); doc.setFontSize(8); doc.setTextColor(37,160,80);
+    doc.text(rotulo,x+5,yNum);
+
+    doc.setFont('helvetica','normal'); doc.setFontSize(7); doc.setTextColor(150,150,150);
+    doc.text(`Documento gerado em ${new Date().toLocaleDateString('pt-BR')} — ${empresa.nome}`,14,yGerado);
+    if(total>1) doc.text(`Página ${p} de ${total}`,pageW-14,yGerado,{align:'right'});
+  }
+}
+
+function gerarPDFOrcamento(id){
+  const orc=DB.get('orcamentos').find(o=>o.id===id);
+  if(!orc){showToast('Orçamento não encontrado','error');return;}
+  if(!window.jspdf){showToast('Biblioteca de PDF não carregou. Verifique sua conexão.','error');return;}
+  const cliente=DB.get('clientes').find(c=>c.id===orc.clienteId);
+  const empresa=getEmpresa();
+  const { jsPDF }=window.jspdf;
+  const doc=new jsPDF();
+  const pageW=doc.internal.pageSize.getWidth();
+  const LIMITE_Y=266; // conteúdo não pode invadir o rodapé de contatos
+
+  // ── Cabeçalho tipo timbrado: logo + dados da empresa à esquerda, título à direita ──
+  let y=desenharCabecalhoPadrao(doc,empresa,'ORÇAMENTO',[
+    `Nº ${orc.numero}`,
+    `Data: ${fmtDate(orc.data)}`
+  ]);
 
   // Bloco cliente
   doc.setFontSize(9);
@@ -3788,6 +4150,137 @@ function gerarPDFOrcamento(id){
 
   doc.save(`${orc.numero}_${(cliente?.nome||'cliente').replace(/[^\w]+/g,'_')}.pdf`);
   showToast('PDF do orçamento gerado!');
+}
+
+// ══════════════════════════════════════════════════════════
+//  PDF DO ESTOQUE (mesmo cabeçalho/rodapé do orçamento)
+// ══════════════════════════════════════════════════════════
+function descricaoFiltrosEstoque(){
+  const f=activeFilters;
+  const p=[];
+  if(f.marca)   p.push('Marca: '+f.marca);
+  if(f.cv)      p.push('CV: '+f.cv);
+  if(f.polos)   p.push('Polos: '+f.polos+'P');
+  if(f.volt)    p.push('Voltagem: '+f.volt);
+  if(f.modelo)  p.push('Modelo: '+f.modelo);
+  if(f.local)   p.push('Local: '+f.local);
+  if(f.situacao)p.push('Situação: '+({com:'Com estoque',baixo:'Estoque baixo',sem:'Sem estoque'}[f.situacao]||f.situacao));
+  return p.length?p.join('   |   '):'Nenhum filtro aplicado — todos os motores cadastrados';
+}
+
+function gerarPDFEstoque(){
+  if(!window.jspdf){showToast('Biblioteca de PDF não carregou. Verifique sua conexão.','error');return;}
+  const motores=ordenarMotores(filterMotores(DB.get('motores')));
+  if(!motores.length){showToast('Nenhum motor para imprimir com os filtros aplicados','error');return;}
+
+  const f=activeFilters;
+  const empresa=getEmpresa();
+  const { jsPDF }=window.jspdf;
+  const doc=new jsPDF({orientation:'landscape'});
+  const pageW=doc.internal.pageSize.getWidth();
+  const pageH=doc.internal.pageSize.getHeight();
+  const LIMITE_Y=pageH-31; // conteúdo não invade o rodapé de contatos
+  const agora=new Date();
+
+  let y=desenharCabecalhoPadrao(doc,empresa,'ESTOQUE ATUAL',[
+    `Data: ${agora.toLocaleDateString('pt-BR')}`,
+    `Hora: ${agora.toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'})}`
+  ]);
+
+  doc.setFontSize(9);
+  doc.setFont('helvetica','bold');
+  doc.text('FILTROS',14,y);
+  doc.setFont('helvetica','normal');
+  doc.setTextColor(70,70,70);
+  doc.text(descricaoFiltrosEstoque(),30,y);
+  doc.setTextColor(30,30,30);
+  y+=7;
+
+  let totalUnidades=0,totalValor=0,qtdZerados=0,qtdBaixos=0;
+  const compras=DB.get('compras'), vendas=DB.get('vendas');
+  const rows=motores.map(m=>{
+    const est=estoqueAtualMotor(m.id);
+    const pm=precoMedioMotor(m.id);
+    const min=(m.estoqueMinimo!==undefined&&m.estoqueMinimo!==null)?m.estoqueMinimo:3;
+    const entradas=(m.saldoInicial||0)+compras.filter(c=>c.motorId===m.id).reduce((s,c)=>s+c.qty,0);
+    const saidas=vendas.filter(v=>v.motorId===m.id).reduce((s,v)=>s+v.qty,0);
+    let locais=locaisComSaldo(m.id);
+    if(f.local) locais=locais.filter(l=>l.local===f.local);
+    const status=est<=0?'Zerado':(est<=min?'Baixo':'OK');
+    if(est<=0) qtdZerados++; else if(est<=min) qtdBaixos++;
+    totalUnidades+=est;
+    totalValor+=pm*est;
+    return [
+      String(m.marca||'—'),
+      `${m.cv} CV`,
+      m.polos?m.polos+'P':'—',
+      String(m.volt||'—'),
+      String(m.modelo||'—'),
+      locais.length?locais.map(l=>`${l.local} (${l.qty})`).join(', '):'—',
+      String(entradas),
+      String(saidas),
+      String(est),
+      fmt(pm),
+      fmt(pm*est),
+      status
+    ];
+  });
+
+  doc.autoTable({
+    startY:y,
+    head:[['Marca','CV','Polos','Voltagem','Modelo','Locais (qtd)','Entradas','Saídas','Saldo','Preço Médio','Valor Total','Status']],
+    body:rows,
+    foot:[['TOTAL','','','','','','','',String(totalUnidades),'',fmt(totalValor),'']],
+    theme:'grid',
+    headStyles:{fillColor:[212,0,0],textColor:255,fontStyle:'bold',fontSize:8.5},
+    footStyles:{fillColor:[240,240,240],textColor:[30,30,30],fontStyle:'bold',fontSize:8.5},
+    styles:{fontSize:8,textColor:[30,30,30],cellPadding:2,overflow:'linebreak'},
+    columnStyles:{
+      0:{cellWidth:26,fontStyle:'bold'},
+      1:{cellWidth:16,halign:'center'},
+      2:{cellWidth:14,halign:'center'},
+      3:{cellWidth:22,halign:'center'},
+      4:{cellWidth:28},
+      6:{cellWidth:18,halign:'center'},
+      7:{cellWidth:16,halign:'center'},
+      8:{cellWidth:16,halign:'center',fontStyle:'bold'},
+      9:{cellWidth:24,halign:'right'},
+      10:{cellWidth:26,halign:'right'},
+      11:{cellWidth:18,halign:'center',fontStyle:'bold'}
+    },
+    didParseCell:d=>{
+      if(d.section==='body'&&d.column.index===11){
+        const t=d.cell.raw;
+        if(t==='Zerado') d.cell.styles.textColor=[212,0,0];
+        else if(t==='Baixo') d.cell.styles.textColor=[190,120,0];
+        else d.cell.styles.textColor=[25,140,60];
+      }
+    },
+    margin:{left:14,right:14,bottom:pageH-LIMITE_Y}
+  });
+
+  let finalY=doc.lastAutoTable.finalY+8;
+  if(finalY+20>LIMITE_Y){doc.addPage();finalY=20;}
+
+  doc.setFont('helvetica','bold');
+  doc.setFontSize(9);
+  doc.text('RESUMO',14,finalY); finalY+=5.5;
+  doc.setFont('helvetica','normal');
+  doc.text(`Itens listados: ${motores.length}`,14,finalY);
+  doc.text(`Unidades em estoque: ${totalUnidades}`,60,finalY);
+  doc.text(`Estoque baixo: ${qtdBaixos}`,125,finalY);
+  doc.text(`Zerados: ${qtdZerados}`,170,finalY);
+  doc.setFont('helvetica','bold');
+  doc.setTextColor(212,0,0);
+  doc.setFontSize(12);
+  doc.text(`VALOR TOTAL EM ESTOQUE: ${fmt(totalValor)}`,pageW-14,finalY,{align:'right'});
+  doc.setTextColor(30,30,30);
+
+  desenharRodapeOrcamento(doc,empresa);
+
+  const d=agora.toISOString().split('T')[0].split('-').reverse().join('-');
+  doc.save(`estoque_${d}.pdf`);
+  showToast('PDF do estoque gerado!');
 }
 
 // ══════════════════════════════════════════════════════════
