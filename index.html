@@ -420,7 +420,7 @@ document.documentElement.style.setProperty("--logo-mega",'url("'+window.LOGO_MEG
     <button class="nav-link" id="nav-empresa"   onclick="showPage('empresa')"><span class="nav-icon">🏢</span><span>Minha Empresa</span></button>
     <button class="nav-link" id="nav-usuarios"  onclick="showPage('usuarios')"><span class="nav-icon">🔐</span><span>Usuários</span></button>
     <div class="sidebar-spacer"></div>
-    <div class="theme-switch-row" id="cloudStatusRow" title="Sincronização com o banco de dados na nuvem">
+    <div class="theme-switch-row" id="cloudStatusRow" style="cursor:pointer" onclick="diagnosticarNuvem()" title="Clique para testar a conexão com a nuvem">
       <span class="theme-switch-label">☁️ Nuvem</span>
       <span id="cloudStatusBadge" style="font-size:11px;font-weight:700;color:var(--muted)">verificando…</span>
     </div>
@@ -1209,18 +1209,61 @@ function fetchComTimeout(url,opts={},ms=8000){
 }
 
 // Retorna: 'ok' | 'pausado' | 'offline'
-// 'pausado' = o projeto responde mas está suspenso/indisponível (erro 5xx),
-// 'offline' = não houve resposta nenhuma (internet, DNS, bloqueio, projeto apagado).
+// Usa uma consulta real (mesmo caminho que o app usa), não o endpoint /health,
+// para não dar falso "offline" por CORS.
 async function verificarConexaoSupabase(){
+  if(!supa) return 'offline';
   try{
-    const r=await fetchComTimeout(SUPABASE_URL+'/auth/v1/health',{headers:{apikey:SUPABASE_ANON_KEY}},8000);
-    if(r.ok) return 'ok';
-    if(r.status>=500) return 'pausado';
-    return 'ok'; // 401/404 = servidor no ar, só o endpoint não liberado
+    const { error }=await supa.from('app_data').select('key').limit(1);
+    // Erro de permissão/tabela = servidor respondeu, logo está no ar.
+    if(error){
+      const m=(error.message||'').toLowerCase();
+      if(m.includes('fetch')||m.includes('network')||m.includes('load failed')) return 'offline';
+      if(error.status>=500) return 'pausado';
+      return 'ok';
+    }
+    return 'ok';
   }catch(e){
     console.warn('[diagnóstico] Supabase inacessível:',e);
     return 'offline';
   }
+}
+
+// Teste completo acionado ao clicar no badge "Nuvem": testa leitura E gravação
+// e mostra na tela o motivo exato de estar offline.
+async function diagnosticarNuvem(){
+  if(!supa){ showToast('A biblioteca do Supabase não carregou. Verifique a internet e recarregue a página (F5).','error'); return; }
+  atualizarStatusNuvem('checking');
+  showToast('Testando conexão com a nuvem…');
+
+  const { data:sess }=await supa.auth.getSession().catch(()=>({data:null}));
+  if(!sess||!sess.session){
+    atualizarStatusNuvem('off');
+    showToast('Sessão não encontrada. Saia e entre novamente para reativar a nuvem.','error');
+    return;
+  }
+
+  // 1) Leitura
+  const leitura=await supa.from('app_data').select('key').limit(1);
+  if(leitura.error){
+    console.error('[diagnóstico] leitura falhou:',leitura.error);
+    atualizarStatusNuvem('off');
+    showToast('Leitura falhou — '+traduzirErroSync(leitura.error),'error');
+    return;
+  }
+
+  // 2) Gravação (chave de teste, não interfere nos dados do sistema)
+  const escrita=await supa.from('app_data')
+    .upsert({key:'__teste_conexao',value:{em:new Date().toISOString()},updated_at:new Date().toISOString()},{onConflict:'key'});
+  if(escrita.error){
+    console.error('[diagnóstico] gravação falhou:',escrita.error);
+    atualizarStatusNuvem('off');
+    showToast('Gravação falhou — '+traduzirErroSync(escrita.error),'error');
+    return;
+  }
+
+  atualizarStatusNuvem('ok');
+  showToast('Nuvem funcionando: leitura e gravação OK.');
 }
 
 // Converte o erro técnico do Supabase em uma mensagem clara em português.
@@ -1535,7 +1578,8 @@ window.onload=async()=>{
   verificarConexaoSupabase().then(estado=>{
     if(estado==='pausado') showToast('Servidor do Supabase respondendo com erro (projeto pausado?). O login pode falhar.','warning');
     else if(estado==='offline') showToast('Sem comunicação com o Supabase. O login não vai funcionar até a conexão voltar.','error');
-    atualizarStatusNuvem(estado==='ok'?'ok':'off');
+    // Não rebaixa o status se uma operação real já confirmou que a nuvem está OK
+    if(estado==='ok'||!cloudOnline) atualizarStatusNuvem(estado==='ok'?'ok':'off');
   });
   if(data&&data.session&&data.session.user&&data.session.user.email){
     await iniciarSessao(data.session.user.email);
