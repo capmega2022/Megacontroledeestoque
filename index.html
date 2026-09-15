@@ -1181,6 +1181,12 @@ document.documentElement.style.setProperty("--logo-mega",'url("'+window.LOGO_MEG
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script>
+// Se o CDN principal falhar (bloqueio de rede, instabilidade do jsDelivr), tenta um espelho.
+if(!window.supabase||!window.supabase.createClient){
+  document.write('<scr'+'ipt src="https://unpkg.com/@supabase/supabase-js@2"><\/scr'+'ipt>');
+}
+</script>
+<script>
 // ══════════════════════════════════════════════════════════
 //  SUPABASE (sincronização em nuvem)
 // ══════════════════════════════════════════════════════════
@@ -1194,6 +1200,46 @@ try{
   }
 }catch(e){ console.warn('Supabase indisponível, operando apenas localmente.',e); }
 
+// ── Diagnóstico de conexão ────────────────────────────────
+// Faz um fetch com prazo máximo, para a tela nunca ficar "pendurada".
+function fetchComTimeout(url,opts={},ms=8000){
+  const ctrl=new AbortController();
+  const t=setTimeout(()=>ctrl.abort(),ms);
+  return fetch(url,{...opts,signal:ctrl.signal}).finally(()=>clearTimeout(t));
+}
+
+// Retorna: 'ok' | 'pausado' | 'offline'
+// 'pausado' = o projeto responde mas está suspenso/indisponível (erro 5xx),
+// 'offline' = não houve resposta nenhuma (internet, DNS, bloqueio, projeto apagado).
+async function verificarConexaoSupabase(){
+  try{
+    const r=await fetchComTimeout(SUPABASE_URL+'/auth/v1/health',{headers:{apikey:SUPABASE_ANON_KEY}},8000);
+    if(r.ok) return 'ok';
+    if(r.status>=500) return 'pausado';
+    return 'ok'; // 401/404 = servidor no ar, só o endpoint não liberado
+  }catch(e){
+    console.warn('[diagnóstico] Supabase inacessível:',e);
+    return 'offline';
+  }
+}
+
+// Converte o erro técnico do Supabase em uma mensagem clara em português.
+function traduzirErroSupabase(error){
+  const msg=((error&&(error.message||error.error_description))||'').toLowerCase();
+  const status=error&&(error.status||error.statusCode);
+  if(!navigator.onLine) return 'Sem internet neste dispositivo. Reconecte e tente novamente.';
+  if(msg.includes('failed to fetch')||msg.includes('networkerror')||msg.includes('load failed')||msg.includes('aborted'))
+    return 'Não foi possível falar com o servidor (Supabase). Pode ser instabilidade ou o projeto estar pausado.';
+  if(status===429||msg.includes('rate limit')||msg.includes('too many'))
+    return 'Muitas tentativas seguidas. Aguarde alguns minutos antes de tentar de novo.';
+  if(msg.includes('email not confirmed')||msg.includes('not confirmed'))
+    return 'A conta existe, mas o e-mail ainda não foi confirmado no Supabase. Confirme o usuário em Authentication → Users.';
+  if(msg.includes('user not found')) return 'Este e-mail não está cadastrado no Supabase.';
+  if(msg.includes('invalid login credentials')) return 'E-mail ou senha inválidos.';
+  if(status>=500) return 'O servidor do Supabase respondeu com erro. Tente novamente em alguns minutos.';
+  return 'Não foi possível entrar: '+((error&&error.message)||'erro desconhecido');
+}
+
 function atualizarStatusNuvem(status){
   // status: 'ok' | 'off' | 'checking'
   const el=document.getElementById('cloudStatusBadge');
@@ -1201,6 +1247,31 @@ function atualizarStatusNuvem(status){
   if(status==='ok'){ el.textContent='conectado'; el.style.color='var(--green)'; cloudOnline=true; }
   else if(status==='off'){ el.textContent='offline (local)'; el.style.color='var(--muted)'; cloudOnline=false; }
   else { el.textContent='verificando…'; el.style.color='var(--muted)'; }
+}
+
+// Traduz o erro de gravação do Postgres/PostgREST para linguagem clara.
+function traduzirErroSync(e){
+  const code=(e&&e.code)||'';
+  const msg=((e&&e.message)||'').toLowerCase();
+  if(code==='42P01'||msg.includes('does not exist')&&msg.includes('app_data'))
+    return 'A tabela app_data não existe no Supabase. Rode o script de correção no SQL Editor.';
+  if(code==='42P10'||msg.includes('on conflict'))
+    return 'A coluna "key" da tabela app_data não tem restrição UNIQUE — por isso a gravação falha. Rode o script de correção.';
+  if(code==='42501'||msg.includes('row-level security')||msg.includes('violates row-level'))
+    return 'O Supabase está bloqueando a gravação (Row Level Security sem política de INSERT/UPDATE). Rode o script de correção.';
+  if(code==='PGRST204'||msg.includes('could not find'))
+    return 'Falta uma coluna na tabela app_data (value ou updated_at). Rode o script de correção.';
+  if(code==='PGRST301'||msg.includes('jwt')||msg.includes('expired'))
+    return 'Sua sessão expirou. Saia e entre novamente.';
+  if(msg.includes('fetch')||msg.includes('network')) return 'Sem comunicação com o Supabase no momento.';
+  return 'Falha ao salvar na nuvem: '+((e&&e.message)||'erro desconhecido');
+}
+let _ultimoAvisoSync=0;
+function avisarFalhaSync(e){
+  const agora=Date.now();
+  if(agora-_ultimoAvisoSync<20000) return; // não repete o aviso a cada gravação
+  _ultimoAvisoSync=agora;
+  showToast('Venda salva só neste aparelho. '+traduzirErroSync(e),'warning');
 }
 
 // Envia uma chave (array/objeto) para a nuvem — não bloqueia a interface (fire-and-forget)
@@ -1213,6 +1284,7 @@ async function syncToSupabase(key,value){
   }catch(e){
     console.warn('Falha ao sincronizar "'+key+'" com a nuvem:',e);
     atualizarStatusNuvem('off');
+    avisarFalhaSync(e);
   }
 }
 
@@ -1362,9 +1434,12 @@ function aplicarPermissoesNav(){
 // Contas autorizadas vindas do Supabase (tabela usuarios_app).
 // null = tabela ainda não criada → modo legado com a lista local.
 let contasApp=null;
+// true = a lista de contas não veio por falha de conexão (e não porque a tabela não existe)
+let contasAppFalhouRede=false;
 
 async function carregarContasApp(){
-  if(!supa){contasApp=null;return null;}
+  if(!supa){contasApp=null;contasAppFalhouRede=true;return null;}
+  contasAppFalhouRede=false;
   try{
     const { data,error }=await supa.from('usuarios_app').select('id,email,perfil,permissoes,ativo').order('email');
     if(error) throw error;
@@ -1375,6 +1450,8 @@ async function carregarContasApp(){
     return contasApp;
   }catch(e){
     console.warn('Tabela usuarios_app indisponível — usando controle de acesso local.',e);
+    const m=((e&&e.message)||'').toLowerCase();
+    contasAppFalhouRede=m.includes('fetch')||m.includes('network')||m.includes('timeout')||(e&&e.status>=500);
     contasApp=null;
     return null;
   }
@@ -1443,8 +1520,23 @@ window.onload=async()=>{
     return;
   }
   if(loginBtn){loginBtn.disabled=true;loginBtn.textContent='CARREGANDO...';}
-  const { data }=await supa.auth.getSession();
+  // Nunca deixa o botão travado: se o Supabase demorar, libera assim mesmo.
+  let data=null;
+  try{
+    const r=await Promise.race([
+      supa.auth.getSession(),
+      new Promise(res=>setTimeout(()=>res({data:null,timeout:true}),10000))
+    ]);
+    data=r&&r.data;
+    if(r&&r.timeout) console.warn('[startup] getSession demorou demais — seguindo para a tela de login.');
+  }catch(e){ console.warn('[startup] getSession falhou:',e); }
   if(loginBtn){loginBtn.disabled=false;loginBtn.textContent='ENTRAR';}
+  // Diagnóstico silencioso da nuvem (avisa antes de o usuário culpar a senha)
+  verificarConexaoSupabase().then(estado=>{
+    if(estado==='pausado') showToast('Servidor do Supabase respondendo com erro (projeto pausado?). O login pode falhar.','warning');
+    else if(estado==='offline') showToast('Sem comunicação com o Supabase. O login não vai funcionar até a conexão voltar.','error');
+    atualizarStatusNuvem(estado==='ok'?'ok':'off');
+  });
   if(data&&data.session&&data.session.user&&data.session.user.email){
     await iniciarSessao(data.session.user.email);
   }
@@ -1485,6 +1577,11 @@ function toggleTheme(){
   if(document.getElementById('app').style.display==='flex') renderPage(currentPage);
 }
 function toggleEye(){const p=document.getElementById('loginPass'),b=document.getElementById('eyeBtn');p.type=p.type==='password'?'text':'password';b.textContent=p.type==='text'?'🙈':'👁️';}
+// Enter envia o login
+['loginUser','loginPass'].forEach(id=>{
+  const el=document.getElementById(id);
+  if(el) el.addEventListener('keydown',e=>{ if(e.key==='Enter') doLogin(); });
+});
 async function doLogin(){
   const email=document.getElementById('loginUser').value.trim();
   const senha=document.getElementById('loginPass').value;
@@ -1492,10 +1589,23 @@ async function doLogin(){
   if(!supa){showToast('Sem conexão com o Supabase. Verifique sua internet e tente novamente.','error');return;}
   const loginBtn=document.getElementById('loginBtn');
   if(loginBtn){loginBtn.disabled=true;loginBtn.textContent='ENTRANDO...';}
-  const { data,error }=await supa.auth.signInWithPassword({ email, password:senha });
+  let data=null,error=null;
+  try{
+    const r=await supa.auth.signInWithPassword({ email, password:senha });
+    data=r.data; error=r.error;
+  }catch(e){ error=e; }
   if(loginBtn){loginBtn.disabled=false;loginBtn.textContent='ENTRAR';}
   if(error||!data||!data.user){
-    showToast('E-mail ou senha inválidos','error');
+    console.error('[login] falha:',error);
+    let aviso=traduzirErroSupabase(error);
+    // Se parecer problema de rede, confirma com o diagnóstico antes de culpar a senha.
+    const msgTec=((error&&error.message)||'').toLowerCase();
+    if(msgTec.includes('fetch')||msgTec.includes('network')||(error&&error.status>=500)){
+      const estado=await verificarConexaoSupabase();
+      if(estado==='pausado') aviso='O projeto no Supabase está fora do ar ou pausado. Reative o projeto no painel do Supabase e tente de novo.';
+      else if(estado==='offline') aviso='Sem comunicação com o Supabase. Verifique a internet, VPN/firewall ou se o projeto ainda existe.';
+    }
+    showToast(aviso,'error');
     return;
   }
   // Segurança: a senha NUNCA é gravada no navegador — apenas o e-mail, se pedido.
@@ -1528,7 +1638,12 @@ async function openApp(email){
       .find(us=>(us.usuario||'').toLowerCase()===email.toLowerCase());
   }
   if(!conta){
-    showToast('Esta conta ainda não tem acesso liberado neste sistema. Peça a um administrador para liberar em Usuários.','error');
+    if(contasAppFalhouRede){
+      // A senha estava certa — o que falhou foi buscar as permissões na nuvem.
+      showToast('Login aceito, mas não foi possível carregar suas permissões (falha de conexão com o Supabase). Tente novamente em alguns minutos.','error');
+    } else {
+      showToast('Esta conta ainda não tem acesso liberado neste sistema. Peça a um administrador para liberar em Usuários.','error');
+    }
     await negarAcesso();
     return;
   }
